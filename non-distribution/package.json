@@ -1,0 +1,44 @@
+{
+  "name": "cs1380:m0",
+  "version": "1.0.0",
+  "author": {
+    "name": "Grace Chen",
+    "email": "grace_a_chen@brown.edu",
+    "cslogin": "gchen76"
+  },
+  "description": "A set of components for cs1380's search engine.",
+  "dependencies": {
+    "html-to-text": "^9.0.5",
+    "jsdom": "^23.2.0",
+    "natural": "^6.10.4"
+  },
+  "scripts": {
+    "pretest": "../scripts/pretest.sh",
+    "test": "jest --maxWorkers=1",
+    "lint": "eslint . --config .eslintrc --fix"
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0",
+    "eslint-config-google": "^0.14.0",
+    "javascript-obfuscator": "^4.1.0",
+    "jest": "^29.7.0"
+  },
+  "report": {
+    "hours": 15,
+    "loc": 322,
+    "jsloc": 90,
+    "sloc": 232,
+    "dev": {
+      "cpu-no": 8,
+      "mem-gb": 8.025636,
+      "ssd-gb": 59
+    },
+    "throughput": {
+      "dev": [1.906, 3.484, 3.139],
+      "aws": [0.808, 0.979, 1.103],
+      "gs": []
+    },
+    "dloc": 16000
+  }
+ }
+  
