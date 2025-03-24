@@ -1,4 +1,5 @@
-const id = require('../util/id');
+const local = global.distribution.local;
+const id = global.distribution.util.id
 
 function store(config) {
   const context = {};
@@ -7,127 +8,65 @@ function store(config) {
 
   /* For the distributed store service, the configuration will
           always be a string */
+  function getShard(v, key) {
+    let nidToNode = {}
+    let nids = []
+    Object.keys(v).forEach(key => {
+      const node = v[key]
+      const nid = id.getNID(node)
+      nidToNode[nid] = node 
+      nids.push(nid)
+    })
+    
+    let KID = id.getID(key) 
+    let nodeToStore = nidToNode[context.hash(KID, nids)]
+    return nodeToStore
+  }
+
   return {
     get: (configuration, callback) => {
-      distribution.local.groups.get(context.gid, (e, v) => { // should return {sid: node objects}
-        if (e) {
-          callback(new Error(`Cannot retrieve node group: ${e}`));
-          return;
-        }
-
-        const nidToNodes = {};
-        Object.values(v).forEach(node => {
-          const nid = id.getNID(node);
-          nidToNodes[nid] = node;
-        });
-
-        const kid = id.getID(configuration);
-        const getNid = context.hash(kid, Object.keys(nidToNodes));
-
-        const remote = {node: nidToNodes[getNid], service: 'store', method: 'get'};
-        const localConfig = {key: configuration, gid: context.gid};
-        distribution.local.comm.send([localConfig], remote, (e, v) => {
-          if (e) {
-            callback(new Error(`Cannot get configuration ${configuration}`));
-          } else {
-            callback(null, v);
-          }
-        });
-      });
+      // Get all nids and determine which node to store on. 
+      local.groups.get(context.gid, (e,v) => {
+        let key = configuration
+        let nodeToStore = getShard(v, key)
+        // console.log("The node to get our kv on: ", nodeToStore)
+        local.comm.send([{key: key, gid: context.gid}], 
+          {node: nodeToStore, service: 'store', method: 'get'}, (e,v) => {
+            callback(e, v); 
+          })
+    })
     },
 
     put: (state, configuration, callback) => {
-      distribution.local.groups.get(context.gid, (e, v) => { // should return {sid: node objects}
-        if (e) {
-          callback(new Error(`Cannot retrieve node group: ${e}`));
-          return;
-        }
-
-        const nidToNodes = {};
-        Object.values(v).forEach(node => {
-          const nid = id.getNID(node);
-          nidToNodes[nid] = node;
-        });
-
-        let checkConfig = configuration;
+      // Get all nids and determine which node to store on. 
+      local.groups.get(context.gid, (e,v) => {
+        let key = configuration
         if (configuration == null) {
-          checkConfig = id.getID(state);
+          key = id.getID(state)
         }
-
-        const kid = id.getID(checkConfig);
-        const putNid = context.hash(kid, Object.keys(nidToNodes));
-
-        const remote = {node: nidToNodes[putNid], service: 'store', method: 'put'};
-        const localConfig = {key: checkConfig, gid: context.gid};
-        distribution.local.comm.send([state, localConfig], remote, (e, v) => {
-          if (e) {
-            callback(new Error(`Cannot put configuration ${configuration}: ${e}`));
-          } else {
-            callback(null, v);
-          }
-        });
-      });
+        let nodeToStore = getShard(v, key)
+        // console.log("The node to store our kv on: ", nodeToStore)
+        local.comm.send([state, {key: key, gid: context.gid}], 
+          {node: nodeToStore, service: 'store', method: 'put'}, (e,v) => {
+            // console.log('successfully sent in mem, ', e, v)
+            callback(e, v); 
+          })
+    })
     },
 
     del: (configuration, callback) => {
-      distribution.local.groups.get(context.gid, (e, v) => { // should return {sid: node objects}
-        if (e) {
-          callback(new Error(`Cannot retrieve node group: ${e}`));
-          return;
-        }
-
-        const nidToNodes = {};
-        Object.values(v).forEach(node => {
-          const nid = id.getNID(node);
-          nidToNodes[nid] = node;
-        });
-
-        const kid = id.getID(configuration);
-        const delNid = context.hash(kid, Object.keys(nidToNodes));
-
-        const remote = {node: nidToNodes[delNid], service: 'store', method: 'del'};
-        const localConfig = {key: configuration, gid: context.gid};
-        distribution.local.comm.send([localConfig], remote, (e, v) => {
-          if (e) {
-            callback(new Error(`Cannot get configuration ${configuration}`));
-          } else {
-            callback(null, v);
-          }
-        });
-      });
+      // Get all nids and determine which node to store on. 
+      local.groups.get(context.gid, (e,v) => {
+        let key = configuration
+        let nodeToStore = getShard(v, key)
+        local.comm.send([{key: key, gid: context.gid}], 
+          {node: nodeToStore, service: 'store', method: 'del'}, (e,v) => {
+            callback(e, v); 
+          })
+    })
     },
 
-    delAll: (callback) => {
-      distribution.local.groups.get(context.gid, (e, v) => { // should return {sid: node objects}
-        if (e) {
-          callback(new Error(`Cannot retrieve node group: ${e}`));
-          return;
-        }
-
-        const nodes = v;
-        const keySet = new Set();
-        let nodeCounter = 0;
-        Object.keys(nodes).forEach((sid) => {
-          const remote = {service: 'store', method: 'delAll', node: nodes[sid]};
-          distribution.local.comm.send([], remote, (e, v) => {
-            if (e) {
-              callback(new Error(`Cannot delete all keys in distributed store, ${e}`));
-              return;
-            }
-
-            v.forEach(key => keySet.add(key));
-            nodeCounter += 1;
-          
-            if (nodeCounter == Object.keys(nodes).length) {
-              callback(null, keySet);
-            }
-          });
-        });
-      });
-    },
-
-    reconf: (configuration, callback) => {
-    },
+    
   };
 };
 

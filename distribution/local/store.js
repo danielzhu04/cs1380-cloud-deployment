@@ -1,140 +1,98 @@
+const path = require('path');
+const fs = require('fs');
+const id = distribution.util.id;
+const serialize = distribution.util.serialize; 
+const deserialize = distribution.util.deserialize; 
+
 /* Notes/Tips:
 
 - Use absolute paths to make sure they are agnostic to where your code is running from!
   Use the `path` module for that.
 */
-const fs = require('fs');
-const path = require('path');
-const id = require('../util/id');
-const { serialize, deserialize } = require('../util/serialization');
 
-const absDir = path.resolve(__dirname, '..', '..', 'store');
-// fs.mkdirSync(absDir, recursive=true);
-let keys = [];
+// To turn key into alpha-numeric safe. 
+function toAlphaNum(str) {
+  if (str == null) {
+    return null
+  } 
+  return str.replace(/[^a-zA-Z0-9]/g, "")
+}
+
+// If the NID directory does not exist, create it. 
+function resolveNodeDir(gid) {
+  dir = path.resolve(__dirname, `../store/${gid}/${id.getSID(global.nodeConfig)}`)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  } else {
+  }
+  return dir 
+}
+
 
 function put(state, configuration, callback) {
-  if (typeof configuration != 'string' && typeof configuration != 'object') {
-    callback(new Error(`Invalid configuration type`));
-    return;
+  let gid = 'local'
+  let key = configuration
+  let value = state 
+  if (configuration && typeof configuration === 'object') {
+    gid = configuration.gid 
+    configuration = configuration.key 
+  } 
+  key = toAlphaNum(configuration)
+  if (key == null) {
+      key = toAlphaNum(id.getID(value))
   }
-
-  let filename = configuration;
-  if (configuration == null) {
-    filename = id.getID(state);
-  } else if (typeof configuration == 'object') {
-    let key = configuration.key;
-    if (typeof key == 'undefined' || key == null) {
-      key = id.getID(state);
-    } 
-    if (typeof configuration.gid != 'undefined' && configuration.gid != null) {
-      filename = `${configuration.gid}${key}`;
-    } else {
-      filename = key;
-    }
-  }
-
-  const listKey = filename;
-  filename = filename.replace(/\W/g, '');
-  const filePath = path.join(absDir, filename);
-  const serializedData = serialize(state);
+  // console.log("my key in put: ", key)
+  let dir = resolveNodeDir(gid)
+  let path = `${dir}/${key}` 
+  let serializedValue = serialize(value)
   try {
-    fs.writeFileSync(filePath, serializedData);
-    keys.push(listKey);
-    callback(null, state);
-  } catch (error) {
-    callback(new Error(`Cannot put configuration ${configuration}: ${error}`));
+    fs.writeFileSync(path, serializedValue)
+    callback(null, value)
+  } catch (err) {
+    callback(err, null)
   }
 }
 
 function get(configuration, callback) {
-  if (typeof configuration != 'string' && typeof configuration != 'object') {
-    callback(new Error(`Invalid configuration type`));
-    return;
-  }
-
-  let filename = configuration;
-  if (typeof configuration == 'object') {
-    const key = configuration.key;
-    if (typeof key == 'undefined' || key == null) {
-      callback(new Error(`Invalid configuration key`));
-      return;
-    }
-    if (typeof configuration.gid != 'undefined' && configuration.gid != null) {
-      filename = `${configuration.gid}${key}`;
-    } else {
-      filename = key;
-    }
-  }
-
-  filename = filename.replace(/\W/g, '');
-  const filePath = path.join(absDir, filename);
+  let gid = 'local'
+  if (configuration && typeof configuration === 'object') {
+    gid = configuration.gid 
+    configuration = configuration.key 
+  } 
+  let key = toAlphaNum(configuration)
+  let dir = resolveNodeDir(gid)
+  let path = `${dir}/${key}`
   try {
-    const fileContents = fs.readFileSync(filePath, 'utf8');
-    const deserializedData = deserialize(fileContents);
-    callback(null, deserializedData);
-  } catch (error) {
-    callback(new Error(`Cannot read contents from configuration ${configuration}`));
+    const value = fs.readFileSync(path, 'utf8')
+    callback(null, deserialize(value))
+  } catch (err) {
+    callback(Error(`key ${configuration} not found for get!`), null)
   }
 }
 
 function del(configuration, callback) {
-  if (typeof configuration != 'string' && typeof configuration != 'object') {
-    callback(new Error(`Invalid configuration type`));
-    return;
-  }
-
-  let filename = configuration;
-  if (typeof configuration == 'object') {
-    const key = configuration.key;
-    if (typeof key == 'undefined' || key == null) {
-      callback(new Error(`Invalid configuration key`));
-      return;
-    }
-    if (typeof configuration.gid != 'undefined' && configuration.gid != null) {
-      filename = `${configuration.gid}${key}`;
+  get(configuration, (e, v) => {
+    if (e != null) {
+      callback(Error(`key ${configuration} not found for del!`), null)
     } else {
-      filename = key;
+      let gid = 'local'
+      if (configuration && typeof configuration === 'object') {
+        gid = configuration.gid 
+        configuration = configuration.key 
+      } 
+      let key = toAlphaNum(configuration)
+      let dir = resolveNodeDir(gid)
+      let path = `${dir}/${key}`
+      fs.unlink(path, (err) => {
+        if (err) {
+          callback(Error(`key ${configuration} not found for del!`), null)
+          return; 
+        } else {
+          callback(null, v)
+        }
+      });
     }
-  }
-
-  filename = filename.replace(/\W/g, '');
-  const filePath = path.join(absDir, filename);
-  try {
-    get(configuration, (e, v) => {
-      if (e) {
-        callback(new Error(`Cannot retrieve configuration ${configuration} while deleting: ${error}`));
-      } else {
-        fs.unlinkSync(filePath);
-        callback(null, v);
-      }
-    })
-  } catch (error) {
-    callback(new Error(`Cannot delete configuration ${configuration}: ${error}`));
-  }
+  })
 }
 
-function delAll(callback) {
-  let delCounter = 0;
-  const deletedEntries = [];
-
-  if (keys.length == 0) {
-    callback(null, []);
-    return;
-  }
-
-  keys.forEach((key) => {
-    del(key, (e, v) => {
-      if (v) {
-        deletedEntries.push(v);
-      }
-
-      delCounter += 1;
-      if (delCounter == keys.length) {
-        keys = [];
-        callback(null, deletedEntries);
-      }
-    });
-  });
-}
-
-module.exports = {put, get, del, delAll};
+module.exports = {put, get, del};
