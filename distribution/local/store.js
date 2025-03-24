@@ -20,7 +20,7 @@ function toAlphaNum(str) {
 
 // If the NID directory does not exist, create it. 
 function resolveNodeDir(gid) {
-  dir = path.resolve(__dirname, `../store/${gid}/${id.getSID(global.nodeConfig)}`)
+  dir = path.resolve(__dirname, `../../store/${gid}/${id.getSID(global.nodeConfig)}`)
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   } else {
