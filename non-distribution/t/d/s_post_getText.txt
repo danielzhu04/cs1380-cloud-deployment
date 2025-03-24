@@ -1,0 +1,7 @@
+MY BOOK COLLECTION
+
+ * The Picture of Dorian Gray by Oscar Wilde [static/book1.txt]
+ * The Iliad by Homer [static/book2.txt]
+ * The Adventures of Sherlock Holmes [static/book3.txt]
+ * Kitchen by Banana Yoshimoto [static/book4.txt]
+ * Earthlings by Sayaka Murata [static/book5.txt]

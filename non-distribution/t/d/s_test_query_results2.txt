@@ -1,0 +1,3 @@
+glob bypassindex file | https://test/global/url/index.html 1
+glob bypassindex | https://test/global/url/index.html 2
+test glob bypassindex | https://test/global/url/index.html 1

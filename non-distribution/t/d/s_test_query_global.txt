@@ -1,0 +1,11 @@
+file | https://test/global/url/index.html 2
+glob bypassindex file | https://test/global/url/index.html 1
+glob bypassindex | https://test/global/url/index.html 2
+glob | https://test/global/url/index.html 3
+bypassindex file | https://test/local/url/index.html 3 https://test/global/url/index.html 2
+bypassindex | https://test/global/url/index.html 1
+merg | https://test/local/url/index.html 1
+test glob bypassindex | https://test/global/url/index.html 1
+test glob | https://test/global/url/index.html 2
+test merg | https://test/local/url/index.html 1
+test | https://test/global/url/index.html 4 https://test/local/url/index.html 2
