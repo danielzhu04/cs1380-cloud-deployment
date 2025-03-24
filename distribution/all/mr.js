@@ -48,11 +48,6 @@ function mr(config) {
     gid: config.gid || 'all',
   };
 
-  const storeDir = path.resolve(__dirname, '..', '..', 'store');
-  if (!fs.existsSync(storeDir)) {
-    fs.mkdirSync(storeDir, { recursive: true });
-  } 
-
   /**
    * @param {MRConfig} configuration
    * @param {Callback} cb
@@ -71,6 +66,7 @@ function mr(config) {
       const gid = config["gid"];
       const keys = config["keys"];
       const nid = config["nid"];
+      const uniqueID = config.uniqueID
       const nidValues = {[nid]: []}; // Format is <nid, [map results]>
       let counter = 0;
       keys.forEach((key) => {
@@ -91,8 +87,8 @@ function mr(config) {
 
           counter += 1;
           if (counter == keys.length) {
-            // Put each of the map results into the local store, format is <nid, [map results]>
-            distribution.local.store.put(nidValues[nid], nid, (e, v) => {
+            // Put each of the map results into the local store, format is <uniqueID, [map results]>
+            distribution.local.store.put(nidValues[nid], uniqueID, (e, v) => {
               if (e) {
                 callback(new Error("Cannot put map results into local store"));
                 return;
@@ -113,10 +109,11 @@ function mr(config) {
 
       const gid = config["gid"];
       const nid = config["nid"];
+      const uniqueID = config.uniqueID
       const keyValues = {}; // Format is <key: [values]>
 
-      // Retrieve stored <nid, [map results]> from local store
-      distribution.local.store.get(nid, (e, v) => {
+      // Retrieve stored <uniqueID, [map results]> from local store
+      distribution.local.store.get(uniqueID, (e, v) => {
         if (e) {
           callback(new Error(`Cannot get key ${nid} from local store in shuffle phase: ${e}`));
           return;
@@ -209,9 +206,19 @@ function mr(config) {
       });
     }
 
+     // Clean up all local KVs associated with the current mr ID in all mr nodes. 
+     const mapCleanup = (config, callback) => {
+      let MID = config.uniqueID
+
+      distribution.local.store.del(MID, (err, v) => {
+        callback(err, v)
+      })
+    }
+
     mrTempService.map = map;
     mrTempService.reduce = reduce;
     mrTempService.shuffle = shuffle;
+    mrTempService.mapCleanup = mapCleanup; 
 
     // Register temporary service endpoint on each node
     distribution[context.gid].routes.put(mrTempService, uniqueID, (e, v) => {
@@ -226,6 +233,8 @@ function mr(config) {
           cb(new Error("Cannot get local groups"));
           return;
         }
+        
+        let nodesTOCleanup = v // For Map phase clean up at the end. 
 
         const nidsToNodes = {};
         Object.values(v).forEach(node => {
@@ -251,7 +260,7 @@ function mr(config) {
         Object.keys(nidsToKeys).forEach((nid) => { // Each iteration corresponds to a new node
           const keyList = nidsToKeys[nid];
           const remote = {service: uniqueID, method: 'map', node: nidsToNodes[nid]};
-          const message = {gid: context.gid, nid: nid, keys: keyList, map: configuration["map"]};
+          const message = {gid: context.gid, nid: nid, keys: keyList, map: configuration["map"], uniqueID: uniqueID};
           distribution.local.comm.send([message], remote, (e, v) => {
             if (e) {
               cb(new Error("Error mapping with local comm"));
@@ -268,7 +277,7 @@ function mr(config) {
               Object.keys(mapResults).forEach((nid) => {
                 const kvPairs = mapResults[nid];
                 const remote = {service: uniqueID, method: 'shuffle', node: nidsToNodes[nid]};
-                const message = {gid: context.gid, nid: nid, pairs: kvPairs};
+                const message = {gid: context.gid, nid: nid, pairs: kvPairs, uniqueID: uniqueID};
                 distribution.local.comm.send([message], remote, (e, v) => {
                   if (e) {
                     cb(new Error("Error shuffling with local comm"));
@@ -292,7 +301,7 @@ function mr(config) {
                     let retList = [];
                     Object.keys(nidsToNodes).forEach((nid) => {
                       const remote = {service: uniqueID, method: 'reduce', node: nidsToNodes[nid]};
-                      const message = {gid: context.gid, reduce: configuration["reduce"]};
+                      const message = {gid: context.gid, reduce: configuration["reduce"], uniqueID: uniqueID};
                       distribution.local.comm.send([message], remote, (e, v) => {
                         if (e) {
                           cb(new Error("Error reducing with local comm"));
@@ -310,13 +319,23 @@ function mr(config) {
                         numResponses += 1;
                         if (numResponses == numNodes) {
                           // Done with all 3 phases, starting teardown
-                          distribution[context.gid].mem.delAll((e, v) => {
-                            distribution[context.gid].store.delAll((e, v) => {
-                              distribution[context.gid].routes.rem(mrTempService, uniqueID, (e1, v1) => {
-                                cb(null, retList);
-                                return;
-                              });
-                            });
+                          let remNodeCount = 0; 
+                          Object.keys(nodesTOCleanup).forEach(nk => {
+                            const remote = {service: uniqueID, method: 'mapCleanup', node: nodesTOCleanup[nk]};
+                            const mapFinConfig = {gid: context.gid, uniqueID: uniqueID}
+                            const message = [mapFinConfig]
+                            distribution.local.comm.send(message, remote, (e,v) => {
+                              remNodeCount += 1
+                              
+                              if (remNodeCount == Object.keys(nodesTOCleanup).length) {
+                                distribution[context.gid].mem.delAll((e, v) => {
+                                  distribution[context.gid].routes.rem(mrTempService, uniqueID, (e1, v1) => {
+                                    cb(null, retList);
+                                    return;
+                                  });
+                              })
+                            }
+                          }); 
                           });
                         }
                       });
