@@ -1,9 +1,13 @@
 // Add setup and query services
 const inquirer = require('inquirer');
-const nodesManager = require('./nodesManage')
+const engineConfig = require('./engineConfig')
+const nodesManager = require('./utils/nodesManage')
+const log = require('./utils/log')
+const SE_ERROR = log.ERROR
+const SE_LOG = log.LOG
 
-// SEARCH ENGINE CONFIGs: 
-const searchEngineName = "XXX"
+// SEARCH ENGINE CONFIGs (defined in ./engineConfig): 
+const searchEngineName = engineConfig.searchEngineName
 
 // 1. User will select a search engine type they would like to use. 
 //    This will set up the nodes, init the crawling and indexing process, 
@@ -23,28 +27,17 @@ async function selectSearchEngine() {
 
 // Main execution loop for registering and executing engine set-up. 
 async function startPrompt() {
-    console.log(`Welcome to ${searchEngineName} search engine!`)
-    const selectedEngine = await selectSearchEngine();
+    const selectedType = await selectSearchEngine();
     
-    switch(selectedEngine) {
+    switch(selectedType) {
         case '❌EXIT': 
             onExit()
             break; 
         case '📚Query Books':
-            console.log('Building search engine for:', selectedEngine) 
-            nodesManager.setUpNodes((e, v) => {
-                if (!e) {
-                    console.log(`${searchEngineName} is ready!!`) 
-                    searchRepl(); 
-                } else {
-                    console.log(`${searchEngineName} is not ready :( ${e}`) 
-                    console.log("Shutting down...")
-                    onExit(); 
-                }
-            })
+            manageQueryBooks(); 
             break; 
         default: 
-            console.log('Invalid option');
+            SE_ERROR('Invalid option');
             break;
     }
 }
@@ -56,7 +49,7 @@ async function enterSearchTerm() {
     {
         type: 'input', 
         name: 'userInput',
-        message: 'Please enter a key term to search for (or EXIT)=> ', 
+        message: 'Please enter a key term to search for (or EXIT) =>', 
         default: '', 
     },
     ]);
@@ -65,7 +58,7 @@ async function enterSearchTerm() {
 
 async function search(searchTerms) {
     let result = "END SEARCH"
-    console.log("🔍 Searching for: " + searchTerms)
+    SE_LOG("🔍 Searching for: " + searchTerms)
     return result 
 }
 
@@ -77,7 +70,7 @@ async function searchRepl() {
             break; 
         default: 
             const searchResult = await search(searchTerm)  
-            console.log("✅ Search result: " + searchResult)
+            SE_LOG("✅ Search result: " + searchResult)
             searchRepl(); 
             break;
     }
@@ -89,14 +82,45 @@ startPrompt();
 
 // HELPER FUNCTIONS: 
 function onExit() {
-    console.log(`Shutting down ${searchEngineName} ... `);
+    SE_LOG(`Shutting down ${searchEngineName} ... `);
     nodesManager.shutDownNodes((e, v) => {
         if (!e) {
-            console.log(`${searchEngineName} shut down successful!`)
+            SE_LOG(`${searchEngineName} shut down successful!`)
         } else {
-            console.log(`${searchEngineName} shut down unsuccessful: ${e}`)
+            SE_ERROR(`${searchEngineName} shut down unsuccessful: ${e}`)
         }
-        console.log("Bye! 👋")
+        console.log("See you! 👋")
         process.exit()
+    })
+}
+
+function manageQueryBooks() {
+    let selectedType = "📚 Query Books"
+    SE_LOG(`Setting up server and ${engineConfig.workerNodesCount} worker nodes for search engine.`) 
+    nodesManager.setUpNodes((e, v) => {
+        if (!e) {
+            let path = './data/books.txt'
+            nodesManager.setUpURLs(path, (e, v) => {
+                const urlCount = v
+                if (!e) {
+                    nodesManager.shardURLs((e, v) => {
+                        if (!e) {
+                            SE_LOG(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
+                            SE_LOG(`${searchEngineName} is ready!!`) 
+                            searchRepl(); 
+                        } else {
+                            SE_ERROR(`Fail to shard intial URL keys for ${searchEngineName}: ${e}`) 
+                            onExit(); 
+                        }
+                    })
+                } else {
+                    SE_ERROR(`${searchEngineName} is not ready (setting up URL data source) ${e}`) 
+                    onExit(); 
+                }
+            })
+        } else {
+            SE_ERROR(`${searchEngineName} is not ready (setting up nodes) ${e}`) 
+            onExit(); 
+        }
     })
 }
