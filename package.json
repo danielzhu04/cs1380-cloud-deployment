@@ -13,6 +13,9 @@
     "javascript-obfuscator": "^4.1.0",
     "jest": "^27.4.7"
   },
+  "bin": {
+    "search-engine-cli": "./distribution/all/search-engine/search.js"
+  },
   "scripts": {
     "pretest": "./scripts/pretest.sh",
     "test": "./scripts/test.sh",
@@ -23,6 +26,8 @@
   "license": "ISC",
   "dependencies": {
     "@brown-ds/distribution": "^0.1.8",
+    "commander": "^13.1.0",
+    "inquirer": "^12.5.0",
     "yargs": "^17.7.2"
   },
   "report": {
@@ -104,15 +109,15 @@
       },
       "throughput": {
         "dev": [
-          0.01030,
-          0.02440,
-          0.01620
+          0.0103,
+          0.0244,
+          0.0162
         ],
         "aws": []
       },
       "latency": {
         "dev": [
-          97.11880,
+          97.1188,
           40.98537,
           61.72729
         ],
@@ -163,11 +168,15 @@
         "ssd-gb": 59
       },
       "throughput": {
-        "dev": [0.07970],
+        "dev": [
+          0.0797
+        ],
         "aws": []
       },
       "latency": {
-        "dev": [12.54706],
+        "dev": [
+          12.54706
+        ],
         "aws": []
       }
     },
