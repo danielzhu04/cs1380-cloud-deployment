@@ -67,7 +67,9 @@ let dataset = []
 function setUpURLs(dataPath, cb) {
     try {
         let URLs = []
-        const fileContent = fs.readFileSync(dataPath, 'utf-8');
+        // const fileContent = fs.readFileSync(dataPath, 'utf-8');
+        const path = require('path');
+        const fileContent = fs.readFileSync(path.join(__dirname, dataPath), 'utf-8');
         const readURLs = fileContent.split('\n');
         readURLs.forEach(url => {
             const kv = {}
@@ -103,9 +105,13 @@ function shardURLs(cb) {
     });
 }
 
+function setUpServer(cb) {
+    
+}
 module.exports = {
     setUpNodes: setUpNodes, 
     shutDownNodes: shutDownNodes,
     setUpURLs: setUpURLs,  
     shardURLs: shardURLs, 
+    setUpServer: setUpServer,
 }

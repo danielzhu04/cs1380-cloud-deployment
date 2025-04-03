@@ -101,13 +101,15 @@ function manageQueryBooks() {
     SE_LOG(`Setting up server and ${engineConfig.workerNodesCount} worker nodes for search engine.`) 
     nodesManager.setUpNodes((e, v) => {
         if (!e) {
-            let path = './data/books.txt'
+            let path = '../data/books.txt'
             nodesManager.setUpURLs(path, (e, v) => {
                 const urlCount = v
                 if (!e) {
                     nodesManager.shardURLs((e, v) => {
+                        // nodesManager.setUpServer
                         if (!e) {
                             SE_LOG(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
+
                             SE_LOG(`${searchEngineName} is ready!!`) 
                             searchRepl(); 
                         } else {
