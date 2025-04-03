@@ -94,6 +94,8 @@ function onExit() {
     })
 }
 
+// Main function for executing everything books search engine related. 
+// This includes calling crawling and indexing. 
 function manageQueryBooks() {
     let selectedType = "📚 Query Books"
     SE_LOG(`Setting up server and ${engineConfig.workerNodesCount} worker nodes for search engine.`) 

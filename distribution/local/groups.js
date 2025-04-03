@@ -42,7 +42,7 @@ groups.put = function(config, group, callback) {
     distribution[gid].mem = require("../all/mem")({gid: gid, hash: hash});
     distribution[gid].store = require("../all/store")({gid: gid, hash: hash});
     distribution[gid].mr = require("../all/mr")({gid: gid});
-    distribution[gid].search = require("../all/search-engine/search")({gid: gid});
+    distribution[gid].search = require("../all/search-engine/service")({gid: gid});
 
     groups[gid] = group;
     if (config != 'all') { // modify 'all' group as well
