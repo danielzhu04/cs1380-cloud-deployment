@@ -22,6 +22,11 @@ test('service setup', (done) => {
   });
 });
 
+test('mock indexer', (done) => {
+  console.log("WIP");
+  done();
+});
+
 /*
     Test setup and teardown
 */
