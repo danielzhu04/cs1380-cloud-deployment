@@ -41,9 +41,14 @@ function setUpNodes(cb) {
     
         const groupInstantiation = () => {
             // Create the groups
-            distribution.local.groups
-                .put(searchGroupConfig, searchGroup, (e, v) => {
-                    cb(e,localServer)
+            distribution.local.groups.put(searchGroupConfig, searchGroup, (e, v) => {
+                    distribution.search.groups.put(searchGroupConfig, searchGroup, (e,v) => {
+                        if (Object.keys(e).length == 0) {
+                            cb(null,localServer)
+                        } else {
+                            cb(e, null)
+                        }
+                    })
             });
         };
 
@@ -67,6 +72,7 @@ function setUpNodes(cb) {
 }
 
 let dataset = [] 
+let datasetKeys = []
 function setUpURLs(dataPath, cb) {
     try {
         let URLs = []
@@ -75,6 +81,7 @@ function setUpURLs(dataPath, cb) {
         const fileContent = fs.readFileSync(path.join(__dirname, dataPath), 'utf-8');
         const readURLs = fileContent.split('\n');
         readURLs.forEach(url => {
+            datasetKeys.push(url)
             const kv = {}
             kv[url] = url
             URLs.push(kv)
@@ -97,7 +104,6 @@ function shardURLs(cb) {
       dataset.forEach((o) => {
         const key = Object.keys(o)[0];
         const value = o[key];
-        console.log("URL KEY PUT IN STORE: ", key, "\n")
         distribution[gid].store.put(value, key, (e, v) => {
           cntr++;
           // Return to main repl once done. 
@@ -110,7 +116,7 @@ function shardURLs(cb) {
 }
 
 function setUpServer(cb) {
-    const config = {gid: gid}
+    const config = {gid: gid, datasetKeys: datasetKeys}
     SE_LOG("SETUP UP SERVER CALLED w/ config: ", config)
     console.log("SETUP UP SERVER CALLED w/ config: ", config)
     distribution[gid].search.setup(config, (e, v) => {

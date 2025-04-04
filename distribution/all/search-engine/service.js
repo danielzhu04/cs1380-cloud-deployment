@@ -1,5 +1,5 @@
 const distribution = require('../../../config.js');
-const log = require('./utils/log')
+const log = require('./utils/log');
 const SE_ERROR = log.ERROR
 const SE_LOG = log.LOG
 
@@ -10,9 +10,7 @@ const context = {};
 
     function setup(configuration, callback) {
         // Assume these are the endpoints for the book txts.
-        console.log("SETUP SERVICE CALLED SUCCESSFULLY W/ CONFIG", configuration);
         const gid = configuration["gid"];
-        console.log("GID: ", gid)
         function getText(cb) {
           const mapper = (key, value) => {
             const urlBase = "https://atlas.cs.brown.edu/data/gutenberg/";
@@ -21,6 +19,7 @@ const context = {};
           };
         
           const reducer = (key, values) => {
+            console.log("IN REDUCER: key: ", key, "values: ", values)
             const https = require('https');
             const store = distribution.local.store;
         
@@ -49,15 +48,12 @@ const context = {};
             return { [key]: null };
           };  
           
-          distribution[context.gid].store.get(null, (e, v) => {
-            console.log("GOT KEYS: ", v);
-            let test_dataset = ["./6/61/old/manif12.txt", "./6/61/old/manif11.txt", "./6/61/61-0.txt"]
-            distribution[context.gid].mr.exec({keys: test_dataset, map: mapper, reduce: reducer}, (e, v) => {
+            const datasetKeys = configuration.datasetKeys
+            distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
                 if (!e) {
                     cb(null, v)
                 }
               });
-          })
 
         }
 
