@@ -2,6 +2,9 @@ const distribution = require('../../../../config.js');
 const id = distribution.util.id;
 const engineConfig = require('../engineConfig.js')
 const fs = require('fs');
+const log = require('./log')
+const SE_ERROR = log.ERROR
+const SE_LOG = log.LOG
 
 let localServer = null;
 const searchGroupConfig = engineConfig.searchGroupConfig
@@ -106,7 +109,12 @@ function shardURLs(cb) {
 }
 
 function setUpServer(cb) {
-    
+    const config = {gid: gid}
+    SE_ERROR("SETUP UP SERVER CALLED\n")
+    distribution[gid].search.setup(config, (e, v) => {
+        cb(e, v)
+        return;
+    });
 }
 module.exports = {
     setUpNodes: setUpNodes, 

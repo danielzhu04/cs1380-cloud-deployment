@@ -1,3 +1,7 @@
+const log = require('./utils/log')
+const SE_ERROR = log.ERROR
+const SE_LOG = log.LOG
+
 function search(config) {
 const context = {};
     context.gid = config.gid || 'all';
@@ -5,27 +9,28 @@ const context = {};
 
     function setup(configuration, callback) {
         // Assume these are the endpoints for the book txts.
-        const dataset = configuration['data']
-        const gid = config["gid"];
-        function getText() {
-          const mapper = (key, value) => {
+        SE_LOG("SETUP SERVICE CALLED SUCCESSFULLY")
+        // const dataset = configuration['data']
+        // const gid = config["gid"];
+        // function getText() {
+        //   const mapper = (key, value) => {
             
-          };
+        //   };
         
-          const reducer = (key, values) => {
+        //   const reducer = (key, values) => {
            
-          };  
+        //   };  
     
-          distribution[gid].mr.exec({keys: Object.keys(dataset), map: mapper, reduce: reducer}, (e, v) => {
-            try {
-              expect(v).toEqual(expect.arrayContaining(expected));
-              done();
-            } catch (e) {
-              done(e);
-            }
-          });
+        //   distribution[gid].mr.exec({keys: Object.keys(dataset), map: mapper, reduce: reducer}, (e, v) => {
+        //     try {
+        //       expect(v).toEqual(expect.arrayContaining(expected));
+        //       done();
+        //     } catch (e) {
+        //       done(e);
+        //     }
+        //   });
           
-        }
+        // }
     
         callback(null, configuration);
     }

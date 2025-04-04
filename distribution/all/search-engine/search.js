@@ -106,12 +106,15 @@ function manageQueryBooks() {
                 const urlCount = v
                 if (!e) {
                     nodesManager.shardURLs((e, v) => {
-                        // nodesManager.setUpServer
                         if (!e) {
                             SE_LOG(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
-
-                            SE_LOG(`${searchEngineName} is ready!!`) 
-                            searchRepl(); 
+                            nodesManager.setUpServer((e, v) => {
+                                if (!e) {
+                                    SE_LOG(`Setup Seach Engine Server`) 
+                                    SE_LOG(`${searchEngineName} is ready!!`) 
+                                    searchRepl(); 
+                                }
+                            });
                         } else {
                             SE_ERROR(`Fail to shard intial URL keys for ${searchEngineName}: ${e}`) 
                             onExit(); 
