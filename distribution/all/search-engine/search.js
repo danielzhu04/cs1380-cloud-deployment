@@ -110,7 +110,7 @@ function manageQueryBooks() {
                             SE_LOG(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
                             nodesManager.setUpServer((e, v) => {
                                 if (!e) {
-                                    SE_LOG(`Setup Seach Engine Server`) 
+                                    SE_LOG(`Setup Seach Engine Server 🚀`) 
                                     SE_LOG(`${searchEngineName} is ready!!`) 
                                     searchRepl(); 
                                 }

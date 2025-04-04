@@ -97,6 +97,7 @@ function shardURLs(cb) {
       dataset.forEach((o) => {
         const key = Object.keys(o)[0];
         const value = o[key];
+        console.log("URL KEY PUT IN STORE: ", key, "\n")
         distribution[gid].store.put(value, key, (e, v) => {
           cntr++;
           // Return to main repl once done. 
@@ -110,7 +111,8 @@ function shardURLs(cb) {
 
 function setUpServer(cb) {
     const config = {gid: gid}
-    SE_ERROR("SETUP UP SERVER CALLED\n")
+    SE_LOG("SETUP UP SERVER CALLED w/ config: ", config)
+    console.log("SETUP UP SERVER CALLED w/ config: ", config)
     distribution[gid].search.setup(config, (e, v) => {
         cb(e, v)
         return;

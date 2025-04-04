@@ -41,6 +41,7 @@ groups.put = function(config, group, callback) {
     distribution[gid].groups = require("../all/groups")({gid: gid});
     distribution[gid].mem = require("../all/mem")({gid: gid, hash: hash});
     distribution[gid].store = require("../all/store")({gid: gid, hash: hash});
+    console.log("GROUP GID: , ", gid)
     distribution[gid].mr = require("../all/mr")({gid: gid});
     distribution[gid].search = require("../all/search-engine/service")({gid: gid});
 

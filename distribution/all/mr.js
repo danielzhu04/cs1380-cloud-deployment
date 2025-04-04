@@ -56,7 +56,7 @@ function mr(config) {
   function exec(configuration, cb) {
     const uniqueID = "mr-" + generateStr(10);
     const mrTempService = {};
-
+    console.log("IN EXEC FUNCTION, \n")
     // Establish methods map, shuffle, and reduce
     function map(config, callback) {
       if (typeof callback != 'function' || !(callback instanceof Function)) {
@@ -71,12 +71,13 @@ function mr(config) {
       let counter = 0;
       keys.forEach((key) => {
         // Retrieve each key from the distributed store
+        console.log("GID IN EXEC: ", gid)
         distribution[gid].store.get(key, (e, v) => {
           if (e) {
             callback(new Error(`Cannot get key from distributed store in map: ${e}`));
             return;
           }
-
+          console.log("IN STORE GET");
           // Apply the map function to the key 
           const mapResult = config["map"](key, v);
           if (mapResult instanceof Array) {
@@ -187,7 +188,7 @@ function mr(config) {
               counter = 0;
 
               Object.keys(aggregates).forEach((key) => {
-                const redResult = config["reduce"](key, aggregates[key]);
+                const redResult = config["reduce"](key, aggregates[key]); // Perhaps change this to use callbacks or await
                 if (redResult instanceof Array) {
                   keyValues = keyValues.concat(redResult);
                 } else {
