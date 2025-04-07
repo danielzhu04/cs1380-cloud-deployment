@@ -33,7 +33,6 @@ groups.put = function(config, group, callback) {
         gid = config.gid;
         hash = config.hash;
     }
-
     distribution[gid] = {};
     distribution[gid].comm = require("../all/comm")({gid: gid});
     distribution[gid].status = require("../all/status")({gid: gid});
