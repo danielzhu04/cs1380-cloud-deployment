@@ -3,6 +3,7 @@ const id = distribution.util.id;
 
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 
 /**
  * Map functions used for mapreduce
@@ -76,7 +77,7 @@ function mr(config) {
             return;
           }
           // Apply the map function to the key 
-          const mapResult = config["map"](key, v);
+          const mapResult = config["map"](key, v, {"gid": gid});
           if (mapResult instanceof Array) {
             nidValues[nid] = nidValues[nid].concat(mapResult); // If result is an array, concat to existing array
           } else {
