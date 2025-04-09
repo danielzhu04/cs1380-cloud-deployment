@@ -4,6 +4,7 @@ const SE_ERROR = log.ERROR
 const SE_LOG = log.LOG
 
 const https = require('https');
+const {convert} = require('html-to-text');
 
 function search(config) {
 const context = {};
@@ -20,7 +21,7 @@ const context = {};
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
           console.log("REQUEST SUCCEEDED")
-          callback(null, data) // return URL + html page content
+          callback(null, convert(data)) // return URL + html page content
         });
       }).on('error', (e) => {
         console.log("ERROR: ", e)
