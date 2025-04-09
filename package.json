@@ -27,6 +27,7 @@
   "dependencies": {
     "@brown-ds/distribution": "^0.1.8",
     "commander": "^13.1.0",
+    "html-to-text": "^9.0.5",
     "inquirer": "^12.5.0",
     "yargs": "^17.7.2"
   },

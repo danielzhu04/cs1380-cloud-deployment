@@ -101,15 +101,20 @@ function manageQueryBooks() {
     SE_LOG(`Setting up server and ${engineConfig.workerNodesCount} worker nodes for search engine.`) 
     nodesManager.setUpNodes((e, v) => {
         if (!e) {
-            let path = './data/books.txt'
+            let path = '../data/books.txt'
             nodesManager.setUpURLs(path, (e, v) => {
                 const urlCount = v
                 if (!e) {
                     nodesManager.shardURLs((e, v) => {
                         if (!e) {
                             SE_LOG(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
-                            SE_LOG(`${searchEngineName} is ready!!`) 
-                            searchRepl(); 
+                            nodesManager.setUpServer((e, v) => {
+                                if (!e) {
+                                    SE_LOG(`Setup Seach Engine Server 🚀`) 
+                                    SE_LOG(`${searchEngineName} is ready!!`) 
+                                    searchRepl(); 
+                                }
+                            });
                         } else {
                             SE_ERROR(`Fail to shard intial URL keys for ${searchEngineName}: ${e}`) 
                             onExit(); 

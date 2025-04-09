@@ -2,6 +2,9 @@ const distribution = require('../../../../config.js');
 const id = distribution.util.id;
 const engineConfig = require('../engineConfig.js')
 const fs = require('fs');
+const log = require('./log')
+const SE_ERROR = log.ERROR
+const SE_LOG = log.LOG
 
 let localServer = null;
 const searchGroupConfig = engineConfig.searchGroupConfig
@@ -38,9 +41,14 @@ function setUpNodes(cb) {
     
         const groupInstantiation = () => {
             // Create the groups
-            distribution.local.groups
-                .put(searchGroupConfig, searchGroup, (e, v) => {
-                    cb(e,localServer)
+            distribution.local.groups.put(searchGroupConfig, searchGroup, (e, v) => {
+                    distribution.search.groups.put(searchGroupConfig, searchGroup, (e,v) => {
+                        if (Object.keys(e).length == 0) {
+                            cb(null,localServer)
+                        } else {
+                            cb(e, null)
+                        }
+                    })
             });
         };
 
@@ -64,12 +72,16 @@ function setUpNodes(cb) {
 }
 
 let dataset = [] 
+let datasetKeys = []
 function setUpURLs(dataPath, cb) {
     try {
         let URLs = []
-        const fileContent = fs.readFileSync(dataPath, 'utf-8');
+        // const fileContent = fs.readFileSync(dataPath, 'utf-8');
+        const path = require('path');
+        const fileContent = fs.readFileSync(path.join(__dirname, dataPath), 'utf-8');
         const readURLs = fileContent.split('\n');
         readURLs.forEach(url => {
+            datasetKeys.push(url)
             const kv = {}
             kv[url] = url
             URLs.push(kv)
@@ -103,9 +115,19 @@ function shardURLs(cb) {
     });
 }
 
+function setUpServer(cb) {
+    const config = {gid: gid, datasetKeys: datasetKeys}
+    SE_LOG("SETUP UP SERVER CALLED w/ config: ", config)
+    console.log("SETUP UP SERVER CALLED w/ config: ", config)
+    distribution[gid].search.setup(config, (e, v) => {
+        cb(e, v)
+        return;
+    });
+}
 module.exports = {
     setUpNodes: setUpNodes, 
     shutDownNodes: shutDownNodes,
     setUpURLs: setUpURLs,  
     shardURLs: shardURLs, 
+    setUpServer: setUpServer,
 }

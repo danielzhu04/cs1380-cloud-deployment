@@ -3,6 +3,7 @@ const id = distribution.util.id;
 
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 
 /**
  * Map functions used for mapreduce
@@ -56,7 +57,6 @@ function mr(config) {
   function exec(configuration, cb) {
     const uniqueID = "mr-" + generateStr(10);
     const mrTempService = {};
-
     // Establish methods map, shuffle, and reduce
     function map(config, callback) {
       if (typeof callback != 'function' || !(callback instanceof Function)) {
@@ -76,9 +76,8 @@ function mr(config) {
             callback(new Error(`Cannot get key from distributed store in map: ${e}`));
             return;
           }
-
           // Apply the map function to the key 
-          const mapResult = config["map"](key, v);
+          const mapResult = config["map"](key, v, {"gid": gid});
           if (mapResult instanceof Array) {
             nidValues[nid] = nidValues[nid].concat(mapResult); // If result is an array, concat to existing array
           } else {
@@ -187,10 +186,6 @@ function mr(config) {
               counter = 0;
 
               Object.keys(aggregates).forEach((key) => {
-                console.log("In reducer wrap");
-                console.log("key is ", key);
-                console.log("aggregates[key] is ", aggregates[key]);
-                console.log("aggregates[key] is ", aggregates[key]);
                 const redResult = config["reduce"](key, aggregates[key]);
                 if (redResult instanceof Array) {
                   keyValues = keyValues.concat(redResult);

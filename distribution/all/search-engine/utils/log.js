@@ -1,11 +1,20 @@
-function ERROR(msg) {
+function ERROR(msg, arrArgs) {
     let prefix = '-> ERROR: '
-    console.log(prefix + msg)
+    if (arrArgs) {
+        console.log(prefix + msg + arrArgs)   
+    } else {
+        console.log(prefix + msg)   
+    }
 }
 
-function LOG(msg) {
+
+function LOG(msg, arrArgs) {
     let prefix = "-> "
-    console.log(prefix + msg)
+    if (arrArgs) {
+        console.log(prefix + msg + arrArgs)   
+    } else {
+        console.log(prefix + msg)   
+    }
 }
 
 module.exports = {
