@@ -187,6 +187,10 @@ function mr(config) {
               counter = 0;
 
               Object.keys(aggregates).forEach((key) => {
+                console.log("In reducer wrap");
+                console.log("key is ", key);
+                console.log("aggregates[key] is ", aggregates[key]);
+                console.log("aggregates[key] is ", aggregates[key]);
                 const redResult = config["reduce"](key, aggregates[key]);
                 if (redResult instanceof Array) {
                   keyValues = keyValues.concat(redResult);
@@ -263,6 +267,7 @@ function mr(config) {
           const message = {gid: context.gid, nid: nid, keys: keyList, map: configuration["map"], uniqueID: uniqueID};
           distribution.local.comm.send([message], remote, (e, v) => {
             if (e) {
+              console.log("E is ", e);
               cb(new Error("Error mapping with local comm"));
               return;
             }
@@ -271,6 +276,7 @@ function mr(config) {
 
             numResponses += 1;
             if (numResponses == Object.keys(nidsToKeys).length) {
+              console.log("MAPRESULTS ARE: ", mapResults);
               // Start shuffle phase
               numResponses = 0;
               let shuffledPairs = {};
@@ -299,6 +305,7 @@ function mr(config) {
                     // Start reduce phase
                     numResponses = 0;
                     let retList = [];
+                    const objectTracker = {};
                     Object.keys(nidsToNodes).forEach((nid) => {
                       const remote = {service: uniqueID, method: 'reduce', node: nidsToNodes[nid]};
                       const message = {gid: context.gid, reduce: configuration["reduce"], uniqueID: uniqueID};
@@ -309,16 +316,87 @@ function mr(config) {
                         }
 
                         if (v instanceof Array) {
+                          console.log("V IS INSTANCEOF ARRAY");
                           if (Object.keys(v).length != 0) {
+                            console.log("V is ", v);
                             retList = retList.concat(v);
+
+                            // loop through elements in v and add to objecttracker
+                            Object.keys(v).forEach((key) => {
+                              if (v[key] instanceof Object) {
+                                const currKey = Object.keys(v[key])[0];
+                                const currVal = v[key][currKey];
+
+                                if (!(currKey in objectTracker)) {
+                                  objectTracker[currKey] = currVal;
+                                } else {
+                                  if (currVal instanceof Array) {
+                                    objectTracker[currKey] = objectTracker[currKey].concat(currVal);
+                                  } else {
+                                    objectTracker[currKey] = currVal;
+                                  }
+                                }
+                              }
+                            });
+
+                            // or can maybe check to see if v is of type object, and see if the
+                            // v key exists in retlist items -- can maybe loop through retlist
+                            // and then retrive keys, and then check to see if any key == v key
+                            // handle 2 cases: if list, then concat, else if number, then add
                           }
                         } else {
                           retList.push(v);
+
+                          console.log("In else condition, v is ", v);
+                          if (v instanceof Object) {
+                            const key = Object.keys(v)[0];
+                            const val = v[key];
+
+                            if (!(key in objectTracker)) {
+                              objectTracker[key] = val;
+                            } else {
+                              if (val instanceof Array) {
+                                objectTracker[key] = objectTracker[key].concat(val);
+                              } else {
+                                objectTracker[key] = val;
+                              }
+                            }
+                          }
                         }
+                        // NEXT STEPS: need to check if something is an object and if so, 
+                        // somehow merge results together
+                        // maybe check for each obj in retlist, if that obj shares
+                        // key with new obj, then concat values (values should always be lists)
+                        // and update current retlist object
+
+                        // also need to sort the list by value (by word count, can maybe just do that here?) --
+                        // maybe do this at the very end
 
                         numResponses += 1;
                         if (numResponses == numNodes) {
                           // Done with all 3 phases, starting teardown
+                          // NEED TO UPDATE OBJECT TRACKER
+                          console.log("About to update object tracker");
+                          try {
+                            if (Object.keys(objectTracker).length > 0 && Object.values(objectTracker)[0] instanceof Array) {
+                              console.log("need to sort list");
+                              Object.keys(objectTracker).forEach((term) => {
+                                objectTracker[term].sort((x, y) => { // sort a list of {k: v} objects
+                                  return Object.values(y)[0] - Object.values(x)[0];
+                                });
+                              });
+                            } else {
+                              console.log("don't need to sort list");
+                            }
+                          } catch (error) {
+                            console.log("Error is ", error);
+                          }
+
+
+                          console.log("OBJECT TRACKER IS: ", objectTracker);
+                          console.log("RETLIST ATP IS ", retList);
+
+
                           let remNodeCount = 0; 
                           Object.keys(nodesTOCleanup).forEach(nk => {
                             const remote = {service: uniqueID, method: 'mapCleanup', node: nodesTOCleanup[nk]};
@@ -330,6 +408,18 @@ function mr(config) {
                               if (remNodeCount == Object.keys(nodesTOCleanup).length) {
                                 distribution[context.gid].mem.delAll((e, v) => {
                                   distribution[context.gid].routes.rem(mrTempService, uniqueID, (e1, v1) => {
+                                    // NOTE: return object tracker if its key list is nonempty
+                                    // cb(null, retList);
+                                    if (Object.keys(objectTracker).length > 0) {
+                                      // change retlist;
+                                      retList = [];
+                                      Object.keys(objectTracker).forEach((term) => {
+                                        retList.push({[term]: objectTracker[term]});
+                                      });
+                                      console.log("should be returning new retList");
+                                    } else {
+                                      console.log("no need to change retlist");
+                                    }
                                     cb(null, retList);
                                     return;
                                   });
