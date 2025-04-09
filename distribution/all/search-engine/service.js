@@ -33,6 +33,7 @@ function search(config) {
         // Assume these are the endpoints for the book txts.
         const gid = configuration["gid"];
         const mapper = (key, value, config) => {
+          console.log("IN RAW MAPPER");
           const urlBase = "https://atlas.cs.brown.edu/data/gutenberg/";
           const fullURL = urlBase + value;
           // const https = functions[0]
@@ -40,15 +41,18 @@ function search(config) {
           const store = distribution.local.store;
 
           // Store the fetched text with key = original incomplete URL
-          console.log("GID: ", gid)
+          // console.log("GID: ", gid)
           distribution[gid].search.getHTTP({"URL" : fullURL}, (e, data) => {
             // console.log("AFTER GETTING HTML FOR LINK",fullURL, "DATA: ", data)
             store.put(data, key, (err, _) => {
               if (err) {
-                console.error(`Failed to store content for ${key}:`, err);
+                console.log("ERROR IS ", err);
+                // console.error(`Failed to store content for ${key}:`, err);
               } else {
-                console.log(`Stored content for ${key}`);
+                console.log("STORED CONTENT SUCCESSFULLY");
+                // console.log(`Stored content for ${key}`);
               }
+              console.log("ABOUT TO RET FROM RAW MAPPER");
               return [{ [fullURL]:  data}]; // return URL + html page content
             });
           })
@@ -74,7 +78,7 @@ function search(config) {
           const toReturn = [];
           Object.keys(termsToUrls).forEach((term) => {
               const tempList = [termsToUrls[term]];
-              console.log("templist is ", tempList);
+              // console.log("templist is ", tempList);
               toReturn.push({[term]: tempList});
           });
           return toReturn;
