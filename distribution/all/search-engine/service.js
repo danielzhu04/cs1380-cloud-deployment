@@ -7,7 +7,7 @@ const https = require('https');
 const {convert} = require('html-to-text');
 
 function search(config) {
-const context = {};
+    const context = {};
     context.gid = config.gid || 'all';
     context.hash = config.hash || global.distribution.util.id.naiveHash;
     
@@ -32,48 +32,61 @@ const context = {};
     function setup(configuration, callback) {
         // Assume these are the endpoints for the book txts.
         const gid = configuration["gid"];
-        function getText(cb) {
-          SE_LOG("IN GET TEXT")
-          const mapper = (key, value, config) => {
-            const urlBase = "https://atlas.cs.brown.edu/data/gutenberg/";
-            const fullURL = urlBase + value;
-            // const https = functions[0]
-            const gid = config["gid"]
-            const store = distribution.local.store;
-            
-            // Store the fetched text with key = original incomplete URL
-            console.log("GID: ", gid)
-            distribution[gid].search.getHTTP({"URL" : fullURL}, (e, data) => {
-              // console.log("AFTER GETTING HTML FOR LINK",fullURL, "DATA: ", data)
-              store.put(data, key, (err, _) => {
-                if (err) {
-                  console.error(`Failed to store content for ${key}:`, err);
-                } else {
-                  console.log(`Stored content for ${key}`);
-                }
-                return [{ [fullURL]:  data}]; // return URL + html page content
-              });
-            })
-          };
-        
-          const reducer = (key, values) => {
-            // console.log("IN REDUCER: key: ", key, "values: ", values)
-            // Even though we're doing async work, we must return something
-            // for the reducer interface. Returning null for now.
-            return { [key]: null };
-          };  
-          
-          const datasetKeys = configuration.datasetKeys
-          distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
-              if (!e) {
-                  cb(null, v)
-              }
-          });
-        }
+        const mapper = (key, value, config) => {
+          const urlBase = "https://atlas.cs.brown.edu/data/gutenberg/";
+          const fullURL = urlBase + value;
+          // const https = functions[0]
+          const gid = config["gid"]
+          const store = distribution.local.store;
 
-        getText((e, v) => {
-            callback(null, "Success");
-        })
+          // Store the fetched text with key = original incomplete URL
+          console.log("GID: ", gid)
+          distribution[gid].search.getHTTP({"URL" : fullURL}, (e, data) => {
+            // console.log("AFTER GETTING HTML FOR LINK",fullURL, "DATA: ", data)
+            store.put(data, key, (err, _) => {
+              if (err) {
+                console.error(`Failed to store content for ${key}:`, err);
+              } else {
+                console.log(`Stored content for ${key}`);
+              }
+              return [{ [fullURL]:  data}]; // return URL + html page content
+            });
+          })
+        };
+        
+        const reducer = (key, values) => {
+          // key is the url
+          // values is a list of html contents
+          const termsToUrls = {};
+          values.forEach((html) => {
+              const terms = html.split(" ");
+              terms.forEach((term) => {
+                  if (!(term in termsToUrls)) {
+                      termsToUrls[term] = {};
+                  }
+                  if (!(key in termsToUrls[term])) {
+                      termsToUrls[term][key] = 0;
+                  }
+                  termsToUrls[term][key] += 1;
+              })
+          });
+
+          const toReturn = [];
+          Object.keys(termsToUrls).forEach((term) => {
+              const tempList = [termsToUrls[term]];
+              console.log("templist is ", tempList);
+              toReturn.push({[term]: tempList});
+          });
+          return toReturn;
+        };  
+
+        const datasetKeys = configuration.datasetKeys
+        distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
+          distribution[gid].store.put(v, "searchdb", (e, v) => {
+            callback(e, v);
+          });
+        });
+
         
     }
     return {
@@ -82,8 +95,9 @@ const context = {};
         setup,
 
         query: (configuration, callback) => {
+            console.log("In the query function");
             callback(null, configuration);
-        }
+        },
     }
 }
 

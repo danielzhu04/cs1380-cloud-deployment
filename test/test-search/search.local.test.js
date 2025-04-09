@@ -12,13 +12,30 @@ const n1 = {ip: '127.0.0.1', port: 7110};
 const n2 = {ip: '127.0.0.1', port: 7111};
 const n3 = {ip: '127.0.0.1', port: 7112};
 
-test('service setup', (done) => {
-  distribution.myGroup.search.setup({test: "test setup"}, (e, v) => {
-    console.log("e is ", e, " and v is ", v);
-    distribution.myGroup.search.query({test: "test query"}, (e, v) => {
-      console.log("e is ", e, " and v is ", v);
-      done();
-    });
+// test('service setup', (done) => {
+//   distribution.myGroup.service.setup({test: "test setup"}, (e, v) => {
+//     console.log("e is ", e, " and v is ", v);
+//     distribution.myGroup.service.query({test: "test query"}, (e, v) => {
+//       console.log("e is ", e, " and v is ", v);
+//       done();
+//     });
+//   });
+// });
+
+test('mock indexer', (done) => {
+  distribution.myGroup.search.setup({gid: "myGroup"}, (e, v) => {
+    const searchResults = v;
+    distribution.myGroup.store.get("searchdb", (e, v) => {
+      console.log("e is ", e);
+      console.log("v is ", v);
+
+      try {
+        expect(v).toEqual(expect.arrayContaining(searchResults));
+        done();
+      } catch (e) {
+        done(e);
+      }
+    })
   });
 });
 
