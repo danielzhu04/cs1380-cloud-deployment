@@ -77,7 +77,7 @@ async function enterSearchTerm() {
     {
         type: 'input', 
         name: 'userInput',
-        message: 'Please enter a key term to search for (or EXIT to exit / or METADATA to toggle print format) =>', 
+        message: 'Please enter a key term to search for (or EXIT (^C) / or METADATA to toggle print format) =>', 
         default: '', 
     },
     ]);

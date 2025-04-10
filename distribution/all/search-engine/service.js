@@ -110,7 +110,9 @@ function search(config) {
             const term = entryContents[0].trim();
             
             // Matching criteria of what should be returned. 
-            if (term.toLowerCase().split(' ').some(str => keyTerms.includes(str) || str.includes(keyTerms))) {
+            if (term.toLowerCase()
+                .split(' ')
+                .some(str => keyTerms.includes(str) || str.includes(keyTerms))) {
               matchingLines.push(entry);
             }
           }
