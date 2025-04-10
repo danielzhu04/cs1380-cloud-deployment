@@ -120,15 +120,32 @@ function setUpServer(cb) {
     SE_LOG("SETUP UP SERVER CALLED w/ config: ", config)
     console.log("SETUP UP SERVER CALLED w/ config: ", config)
     distribution[gid].search.setup(config, (e, v) => {
-        console.log("RETURN FROM SETUP SERVER")
         cb(e, v)
         return;
     });
+    cb(null, "hi"); 
+    return; 
 }
+
+function searchKeyTerm(searchTerms, cb) {
+    const config = {gid: gid, terms: searchTerms}
+    distribution[gid].search.query(config, (e,v) => {
+        // console.log("Returning from query service, ", e, v)
+        if (v) {
+            cb(null, v)
+            return; 
+        } else {
+            cb(e, null)
+            return; 
+        }
+    })
+}
+
 module.exports = {
     setUpNodes: setUpNodes, 
     shutDownNodes: shutDownNodes,
     setUpURLs: setUpURLs,  
     shardURLs: shardURLs, 
     setUpServer: setUpServer,
+    searchKeyTerm: searchKeyTerm 
 }
