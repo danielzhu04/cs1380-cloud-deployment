@@ -1,5 +1,7 @@
 // Add setup and query services
 const inquirer = require('inquirer');
+const table = require('cli-table3'); 
+
 const engineConfig = require('./engineConfig')
 const nodesManager = require('./utils/nodesManage')
 const log = require('./utils/log')
@@ -8,8 +10,11 @@ const SE_LOG = log.LOG
 
 // SEARCH ENGINE CONFIGs (defined in ./engineConfig): 
 const searchEngineName = engineConfig.searchEngineName
+let queryWithMetadata = engineConfig.queryWithMetadata
+let localServer = engineConfig.localServer
 
-// 1. User will select a search engine type they would like to use. 
+// 1. User will select a search engine type and return result type (if 
+//    they would like more metadata in their results) that they would like to use. 
 //    This will set up the nodes, init the crawling and indexing process, 
 //    or shutdown the engine itself if any of the above fails. 
 async function selectSearchEngine() {
@@ -25,6 +30,28 @@ async function selectSearchEngine() {
     return answers.option;
 }
 
+async function selectResultType() {
+    // Register prompting for selecting result type. 
+    const answers = await inquirer.default.prompt([
+    {
+        type: 'list',
+        name: 'option',
+        message: `Please select a query result format type => `, 
+        choices: ['With Metadata', 'Just Links', 'EXIT'],
+    },
+    ]);
+    switch(answers.option) {
+        case 'EXIT': 
+            onExit()
+            break; 
+        case 'With Metadata':
+            return true  
+        default: 
+            break;
+    }
+    return false
+}
+
 // Main execution loop for registering and executing engine set-up. 
 async function startPrompt() {
     const selectedType = await selectSearchEngine();
@@ -34,6 +61,7 @@ async function startPrompt() {
             onExit()
             break; 
         case '📚Query Books':
+            queryWithMetadata = await selectResultType();
             manageQueryBooks(); 
             break; 
         default: 
@@ -57,9 +85,91 @@ async function enterSearchTerm() {
 }
 
 async function search(searchTerms) {
-    let result = "END SEARCH"
-    SE_LOG("🔍 Searching for: " + searchTerms)
-    return result 
+    SE_LOG("🔍 Querying for: " + searchTerms)
+    nodesManager.searchKeyTerm(searchTerms, (e,v) => {
+        if (e) {
+            console.log("Querying Failed! for search keywords: ", searchTerms, " Error: ", e)
+            return null;  
+        } else {
+            let searchResult = v
+            console.log("RESULTS: ", searchResult)
+            SE_LOG("Querying Success! Returning Results.")
+
+            // Format search result. 
+            let formattedReuslt = ""
+            if (searchResult == null || searchResult == undefined || searchResult.length == 0) {
+                formattedReuslt = "No matching pages found..."
+            } else {
+                let linkToTerms = {}
+                let linkToFreq = {}
+
+                // Go through each returned matching results, and parse through 
+                // the global index entries. 
+                searchResult.forEach((res) => {
+                    const splits = res.split('|')
+                    const terms = splits[0].trim()
+                    const linkFreq = splits[1].split(',')
+                    console.log("RES SPLITS: ", terms, " Links: ", linkFreq)
+                    
+                    linkFreq.forEach((lf) => {
+                        lf = lf.trim().replace(/^'+|'+$/g, '')
+                        console.log("LF: ", lf)
+                        const link = lf.split(' ')[0].trim()
+                        const freq = lf.split(' ')[1].trim()
+                        if (!(link in linkToFreq)) {
+                            linkToFreq[link] = 0
+                        }
+                        if (!(link in linkToTerms)) {
+                            linkToTerms[link] = []
+                        }
+
+                        linkToFreq[link] += Number(freq.trim())
+                        linkToTerms[link].push(terms)
+                    })
+                })
+
+                // Sort {links: freq} by most frequent and push links into 
+                // links only array for no metadata result. 
+                let linksOnlySorted = {};
+                const linksSorted = Object.entries(linkToFreq).sort((a, b) => b[1] - a[1]);
+                linksSorted.forEach((linkFreq) => {
+                    linksOnlySorted[linkFreq[0]] = linkFreq[1] 
+                })
+
+                console.log("LINK FREQ: ", linksOnlySorted)
+                console.log("LINK Terms: ", linkToTerms)
+
+                // Format querying results based on if the user chose metadata 
+                // or just with links rankd in frequnecy first. 
+                if (queryWithMetadata) {
+                    console.log("querying result with metadata!!!")
+                    const t = new table({
+                        head: ['Link', 'Frequency', 'Index terms'],
+                        colWidths: [75, 13, 50]
+                    });
+                    
+                    Object.entries(linksOnlySorted).forEach(([link, freq]) => {
+                        const terms = linkToTerms[link].join(', ')
+                        t.push([link, freq, terms]);
+                    });
+                    formattedReuslt = t
+                } else {
+                    console.log("querying result without metadata!!!")
+                    const t = new table({
+                        head: ['Link', 'Frequency'],
+                        colWidths: [75, 13]
+                    });
+                    Object.entries(linksOnlySorted).forEach(([link, count]) => {
+                        t.push([link, count]);
+                    });
+                    formattedReuslt = t
+                }
+            }
+            
+            SE_LOG("✅Querying result: \n" + formattedReuslt)
+            return formattedReuslt; 
+        }
+    }); 
 }
 
 async function searchRepl() {
@@ -69,8 +179,7 @@ async function searchRepl() {
             onExit()
             break; 
         default: 
-            const searchResult = await search(searchTerm)  
-            SE_LOG("✅ Search result: " + searchResult)
+            await search(searchTerm) 
             searchRepl(); 
             break;
     }
@@ -89,6 +198,10 @@ function onExit() {
         } else {
             SE_ERROR(`${searchEngineName} shut down unsuccessful: ${e}`)
         }
+        if (localServer) {
+            SE_LOG('Closing local server')
+            localServer.close()
+        }
         console.log("See you! 👋")
         process.exit()
     })
@@ -101,6 +214,7 @@ function manageQueryBooks() {
     SE_LOG(`Setting up server and ${engineConfig.workerNodesCount} worker nodes for search engine.`) 
     nodesManager.setUpNodes((e, v) => {
         if (!e) {
+            localServer = v 
             let path = '../data/books.txt'
             nodesManager.setUpURLs(path, (e, v) => {
                 const urlCount = v
@@ -111,7 +225,7 @@ function manageQueryBooks() {
                             nodesManager.setUpServer((e, v) => {
                                 if (!e) {
                                     SE_LOG(`Setup Seach Engine Server 🚀`) 
-                                    SE_LOG(`${searchEngineName} is ready!!`) 
+                                    SE_LOG(`${searchEngineName} is ready!!`)  
                                     searchRepl(); 
                                 }
                             });

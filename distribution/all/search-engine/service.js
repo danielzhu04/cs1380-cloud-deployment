@@ -1,5 +1,6 @@
 const distribution = require('../../../config.js');
 const log = require('./utils/log');
+const fs = require('fs')
 const SE_ERROR = log.ERROR
 const SE_LOG = log.LOG
 
@@ -93,15 +94,49 @@ function search(config) {
 
         
     }
+
+    function findMatchingInIndex(indexingFile, keyTerms) {
+      keyTerms = keyTerms.replace(/\n/g, ' ');
+      keyTerms = keyTerms.trim();
+
+      const matchingLines = [];
+      try {
+        const data = fs.readFileSync(indexingFile, 'utf8');
+        const fileContents = data.split('\n');
+
+        fileContents.forEach((entry) => {
+          const entryContents = entry.split(' | ');
+          // console.log("ENTRY: ", entry, " ENTRY CONTENT: ", entryContents)
+          if (entryContents[0]) {
+            const term = entryContents[0].trim();
+            if (term.includes(keyTerms)) {
+              matchingLines.push(entry);
+            }
+          }
+        });
+        
+      } catch (e) {
+        console.log("Not a valid global index file, ", indexingFile, " -- can't be read. ", e)
+        return null; 
+      }
+
+      // Print matching lines
+      console.log("matching lines: ", matchingLines)
+      return matchingLines
+    }
+
+    function query(configuration, callback) {
+      let globalIndexFile = "../../../test/search-mock-files/global-index.txt"; 
+      console.log("In the query function; Configs: ", configuration);
+      const results = findMatchingInIndex(globalIndexFile, configuration.terms)
+      callback(null, results);
+    }
+
+
     return {
         getHTTP, 
-
         setup,
-
-        query: (configuration, callback) => {
-            console.log("In the query function");
-            callback(null, configuration);
-        },
+        query,
     }
 }
 

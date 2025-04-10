@@ -32,8 +32,7 @@ function resolveNodeDir(gid) {
 function put(state, configuration, callback) {
   let gid = 'local'
   let key = configuration
-  let value = state 
-  console.log("DATA: ", state)
+  let value = state
   if (configuration && typeof configuration === 'object') {
     gid = configuration.gid 
     configuration = configuration.key 

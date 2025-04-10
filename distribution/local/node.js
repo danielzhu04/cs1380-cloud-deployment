@@ -97,15 +97,18 @@ const start = function(callback) {
   */
 
   server.listen(global.nodeConfig.port, global.nodeConfig.ip, () => {
-    log(`Server running at http://${global.nodeConfig.ip}:${global.nodeConfig.port}/`);
+    console.log(`Server running at http://${global.nodeConfig.ip}:${global.nodeConfig.port}/`);
     global.distribution.node.server = server;
     callback(server);
   });
 
   server.on('error', (error) => {
-    // server.close();
-    log(`Server error: ${error}`);
-    throw error;
+    server.close((e) => {
+      console.log("closing error: ", e)
+      log(`Server error: ${error}`);
+      throw error;
+    });
+    
   });
 };
 

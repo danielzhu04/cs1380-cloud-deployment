@@ -10,10 +10,12 @@ function setUpConfig() {
     console.log(`Initializing search engine configs ...`)
     const config = {
         searchEngineName: "XXX", 
+        localServer: null, 
         searchGroupConfig: searchGroupConfig, 
         workerNodes: workerNodes, 
         workerNodesCount: Object.keys(workerNodes).length, 
-        dataPath: null 
+        dataPath: null, 
+        queryWithMetadata: false
     }
 
     console.log(`Welcome to ${config.searchEngineName} search engine!`)
