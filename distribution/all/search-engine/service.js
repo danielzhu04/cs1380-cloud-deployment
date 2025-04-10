@@ -106,32 +106,29 @@ function search(config) {
 
         fileContents.forEach((entry) => {
           const entryContents = entry.split(' | ');
-          // console.log("ENTRY: ", entry, " ENTRY CONTENT: ", entryContents)
           if (entryContents[0]) {
             const term = entryContents[0].trim();
-            if (term.includes(keyTerms)) {
+            
+            // Matching criteria of what should be returned. 
+            if (term.toLowerCase().split(' ').some(str => keyTerms.includes(str) || str.includes(keyTerms))) {
               matchingLines.push(entry);
             }
           }
         });
-        
       } catch (e) {
         console.log("Not a valid global index file, ", indexingFile, " -- can't be read. ", e)
         return null; 
       }
 
-      // Print matching lines
-      console.log("matching lines: ", matchingLines)
+      // Print matching lines. 
       return matchingLines
     }
 
     function query(configuration, callback) {
       let globalIndexFile = "../../../test/search-mock-files/global-index.txt"; 
-      console.log("In the query function; Configs: ", configuration);
       const results = findMatchingInIndex(globalIndexFile, configuration.terms)
       callback(null, results);
     }
-
 
     return {
         getHTTP, 

@@ -77,7 +77,7 @@ async function enterSearchTerm() {
     {
         type: 'input', 
         name: 'userInput',
-        message: 'Please enter a key term to search for (or EXIT) =>', 
+        message: 'Please enter a key term to search for (or EXIT to exit / or METADATA to toggle print format) =>', 
         default: '', 
     },
     ]);
@@ -86,46 +86,48 @@ async function enterSearchTerm() {
 
 async function search(searchTerms) {
     SE_LOG("🔍 Querying for: " + searchTerms)
-    nodesManager.searchKeyTerm(searchTerms, (e,v) => {
+
+    // Stem all parts of search terms for closer match. 
+    const stemmedSearchTerms = engineConfig.stemmer(searchTerms)
+   
+    nodesManager.searchKeyTerm(stemmedSearchTerms, (e,v) => {
         if (e) {
             console.log("Querying Failed! for search keywords: ", searchTerms, " Error: ", e)
             return null;  
         } else {
             let searchResult = v
             console.log("RESULTS: ", searchResult)
-            SE_LOG("Querying Success! Returning Results.")
+            SE_LOG("Querying Success! Formatting and returning Results.")
 
-            // Format search result. 
+            // Format search result into table format.  
             let formattedReuslt = ""
-            if (searchResult == null || searchResult == undefined || searchResult.length == 0) {
+            if (searchResult == null 
+                || searchResult == undefined 
+                || searchResult.length == 0) {
                 formattedReuslt = "No matching pages found..."
             } else {
-                let linkToTerms = {}
-                let linkToFreq = {}
+                let linkToTerms = {} // Build map from link to the index term they were found. 
+                let linkToFreq = {} // Build map from link to the freq this link was found.  
 
                 // Go through each returned matching results, and parse through 
                 // the global index entries. 
                 searchResult.forEach((res) => {
-                    const splits = res.split('|')
-                    const terms = splits[0].trim()
-                    const linkFreq = splits[1].split(',')
-                    console.log("RES SPLITS: ", terms, " Links: ", linkFreq)
-                    
-                    linkFreq.forEach((lf) => {
-                        lf = lf.trim().replace(/^'+|'+$/g, '')
-                        console.log("LF: ", lf)
-                        const link = lf.split(' ')[0].trim()
-                        const freq = lf.split(' ')[1].trim()
+                    const splits = res.split('|') // word | link1 3 link2 6 
+                    const terms = splits[0].trim() // word 
+                    const linkFreq = splits[1].trim() // link1 3 link2 6
+                    const httpRegex = /(https?:\/\/[^\s]+)\s(\d+)/g;
+                    while ((lf = httpRegex.exec(linkFreq)) !== null) {
+                        const link = lf[1].trim() // link1 
+                        const freq = lf[2].trim() // 3 
                         if (!(link in linkToFreq)) {
                             linkToFreq[link] = 0
                         }
                         if (!(link in linkToTerms)) {
                             linkToTerms[link] = []
                         }
-
-                        linkToFreq[link] += Number(freq.trim())
+                        linkToFreq[link] += Number(freq)
                         linkToTerms[link].push(terms)
-                    })
+                    }
                 })
 
                 // Sort {links: freq} by most frequent and push links into 
@@ -136,16 +138,13 @@ async function search(searchTerms) {
                     linksOnlySorted[linkFreq[0]] = linkFreq[1] 
                 })
 
-                console.log("LINK FREQ: ", linksOnlySorted)
-                console.log("LINK Terms: ", linkToTerms)
-
                 // Format querying results based on if the user chose metadata 
                 // or just with links rankd in frequnecy first. 
                 if (queryWithMetadata) {
-                    console.log("querying result with metadata!!!")
                     const t = new table({
                         head: ['Link', 'Frequency', 'Index terms'],
-                        colWidths: [75, 13, 50]
+                        colWidths: [50, 13, 50], 
+                        wordWrap: true
                     });
                     
                     Object.entries(linksOnlySorted).forEach(([link, freq]) => {
@@ -154,10 +153,10 @@ async function search(searchTerms) {
                     });
                     formattedReuslt = t
                 } else {
-                    console.log("querying result without metadata!!!")
                     const t = new table({
                         head: ['Link', 'Frequency'],
-                        colWidths: [75, 13]
+                        colWidths: [60, 13], 
+                        wordWrap: true
                     });
                     Object.entries(linksOnlySorted).forEach(([link, count]) => {
                         t.push([link, count]);
@@ -178,12 +177,15 @@ async function searchRepl() {
         case 'EXIT': 
             onExit()
             break; 
+        case 'METADATA': 
+            queryWithMetadata = !queryWithMetadata
+            searchRepl(); 
+            break;  
         default: 
             await search(searchTerm) 
             searchRepl(); 
             break;
     }
-    
 }
 
 // 0. BEGIN EVERYTHING!!! 
