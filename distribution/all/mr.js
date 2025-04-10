@@ -78,8 +78,9 @@ function mr(config) {
           }
           // Apply the map function to the key 
           console.log("key is ", key);
-          // console.log("v is ", v);
+          console.log("v is ", v);
           const mapResult = config["map"](key, v, {"gid": gid});
+          console.log("AFTER RAW MAP, type of result is ", typeof mapResult);
           // console.log("after map is ", mapResult);
           if (mapResult instanceof Array) {
             nidValues[nid] = nidValues[nid].concat(mapResult); // If result is an array, concat to existing array
@@ -96,6 +97,7 @@ function mr(config) {
                 return;
               }
 
+              console.log("About to return from map wrapper");
               // console.log("ABOUT TO RET FROM MAP WRAPPER, nidvals are ", nidValues);
               callback(null, nidValues);
               return;
@@ -276,7 +278,7 @@ function mr(config) {
 
             numResponses += 1;
             if (numResponses == Object.keys(nidsToKeys).length) {
-              // console.log("MAPRESULTS ARE: ", mapResults);
+              console.log("MAPRESULTS ARE: ", mapResults); // mapresults undefined
               console.log("STARTING SHUFFLE PHASE");
               // Start shuffle phase
               numResponses = 0;

@@ -1,7 +1,7 @@
 const distribution = require('../../../config.js');
 const log = require('./utils/log');
-const SE_ERROR = log.ERROR
-const SE_LOG = log.LOG
+// const SE_ERROR = log.ERROR
+// const SE_LOG = log.LOG
 
 const https = require('https');
 const {convert} = require('html-to-text');
@@ -12,21 +12,42 @@ function search(config) {
     context.hash = config.hash || global.distribution.util.id.naiveHash;
     
     function getHTTP(config, callback) {
-      fullURL = config["URL"]
+        console.log("IN THE GETHTTP FUNC");
+        const fullURL = config["URL"];
       const agent = new https.Agent({
         rejectUnauthorized: false
       });
-      https.get(fullURL, { agent }, (res) => {
+      console.log("About to run https get");
+      const httpGet = https.get(fullURL, { agent }, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          console.log("REQUEST SUCCEEDED")
-          callback(null, convert(data)) // return URL + html page content
+        res.on('data', chunk => { 
+            data += chunk;
+            console.log("GETTING MORE DATA");
         });
-      }).on('error', (e) => {
-        console.log("ERROR: ", e)
-        callback(e)
+        res.on('error', (error) => {
+            console.log("ERROR WITH HTTP RES");
+            callback(error);
+            return;
+        });
+
+        res.on('end', () => {
+          console.log("REQUEST SUCCEEDED");
+          callback(null, convert(data)); // return URL + html page content
+          return;
+        });
+      })
+      
+      httpGet.on('error', (e) => {
+        console.log("ERROR 2");
+        callback(e);
+        return;
       });
+      httpGet.setTimeout(10000, () => {
+        console.log("REQUEST TOOK TOO LONG");
+        callback(new Error('Request timeout'));
+        return;
+      });
+      console.log("outside of https get");
     }
 
     function setup(configuration, callback) {
@@ -36,17 +57,24 @@ function search(config) {
           console.log("IN RAW MAPPER");
           const urlBase = "https://atlas.cs.brown.edu/data/gutenberg/";
           const fullURL = urlBase + value;
+          console.log("fullURL is ", fullURL);
           // const https = functions[0]
           const gid = config["gid"]
           const store = distribution.local.store;
 
           // Store the fetched text with key = original incomplete URL
           // console.log("GID: ", gid)
+          console.log("ABOUT TO RUN GETHTTP");
           distribution[gid].search.getHTTP({"URL" : fullURL}, (e, data) => {
+            console.log("Error is ", e);
+            console.log("Error is ", e);
+            console.log("Error is ", e);
+            console.log("Error is ", e);
+            console.log("AFTER GETTING HTML DATA");
             // console.log("AFTER GETTING HTML FOR LINK",fullURL, "DATA: ", data)
             store.put(data, key, (err, _) => {
               if (err) {
-                console.log("ERROR IS ", err);
+                console.log("ERROR 1");
                 // console.error(`Failed to store content for ${key}:`, err);
               } else {
                 console.log("STORED CONTENT SUCCESSFULLY");
