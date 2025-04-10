@@ -120,6 +120,7 @@ function setUpServer(cb) {
     SE_LOG("SETUP UP SERVER CALLED w/ config: ", config)
     console.log("SETUP UP SERVER CALLED w/ config: ", config)
     distribution[gid].search.setup(config, (e, v) => {
+        console.log("RETURN FROM SETUP SERVER")
         cb(e, v)
         return;
     });
