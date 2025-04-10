@@ -119,10 +119,10 @@ function setUpServer(cb) {
     const config = {gid: gid, datasetKeys: datasetKeys}
     SE_LOG("SETUP UP SERVER CALLED w/ config: ", config)
     console.log("SETUP UP SERVER CALLED w/ config: ", config)
-    // distribution[gid].search.setup(config, (e, v) => {
-    //     cb(e, v)
-    //     return;
-    // });
+    distribution[gid].search.setup(config, (e, v) => {
+        cb(e, v)
+        return;
+    });
     cb(null, "hi"); 
     return; 
 }

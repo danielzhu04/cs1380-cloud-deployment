@@ -68,9 +68,11 @@ test('mock indexer', (done) => {
 
     distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
       const searchResults = v;
+      console.log("done with search setup, e is ", e);
       distribution.myGroup.store.get("searchdb", (e, v) => {
         // console.log("e is ", e);
-        // console.log("v is ", v);
+        console.log("v is ", v);
+        console.log("done with store get, e is ", e);
   
         try {
           expect(v).toEqual(expect.arrayContaining(searchResults));
