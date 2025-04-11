@@ -16,6 +16,9 @@ function search(config) {
     context.hash = config.hash || global.distribution.util.id.naiveHash;
 
     function stemHTML(html) {
+        if (typeof html != "string") {
+            return new Error("Non-string HTML contents");
+        }
         const words = html.trim().split(' ');
         stemmed = [];
         words.forEach(word => {
@@ -139,13 +142,19 @@ function search(config) {
           // })
         };
         
-        const reducer = (key, values) => {
+        const reducer = (key, values, config) => {
           // key is the url
           // values is a list of html contents
           console.log("IN INDEX REDUCER")
+          // const natural = require('natural');
+          const gid = config["gid"];
           const termsToUrls = {};
           values.forEach((html) => {
               const terms = distribution[gid].search.stemHTML(html);
+              if (terms instanceof Error) {
+                return terms;
+              }
+              // const terms = html.split(" ");
               terms.forEach((term) => {
                   if (!(term in termsToUrls)) {
                       termsToUrls[term] = {};
@@ -219,6 +228,7 @@ function search(config) {
         getHTTP, 
         setup,
         query,
+        stemHTML
     }
 }
 

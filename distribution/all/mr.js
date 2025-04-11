@@ -192,7 +192,7 @@ function mr(config) {
               counter = 0;
 
               Object.keys(aggregates).forEach((key) => {
-                const redResult = config["reduce"](key, aggregates[key]);
+                const redResult = config["reduce"](key, aggregates[key], {"gid": gid});
                 if (redResult instanceof Array) {
                   keyValues = keyValues.concat(redResult);
                 } else {
