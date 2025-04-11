@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const id = distribution.util.id;
 
-jest.setTimeout(100000000);
+jest.setTimeout(1000000);
 
 const myGroup = {};
 

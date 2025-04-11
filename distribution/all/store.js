@@ -39,16 +39,24 @@ function store(config) {
 
     put: (state, configuration, callback) => {
       // Get all nids and determine which node to store on. 
-      local.groups.get(context.gid, (e,v) => {
+      console.log("IN DISTRIBUTED PUT");
+      console.log("State is ", state);
+      console.log("Config is ", configuration);
+      console.log("Callback is ", callback);
+      local.groups.get(context.gid, (e, v) => {
+        console.log("After groups get local");
+        console.log("E is ", e);
+        console.log("V is ", v);
         let key = configuration
         if (configuration == null) {
           key = id.getID(state)
         }
         let nodeToStore = getShard(v, key)
         // console.log("The node to store our kv on: ", nodeToStore)
+        console.log("ABOUT TO DO LOCAL COMM SEND IN PUT");
         local.comm.send([state, {key: key, gid: context.gid}], 
-          {node: nodeToStore, service: 'store', method: 'put'}, (e,v) => {
-            // console.log('successfully sent in mem, ', e, v)
+          {node: nodeToStore, service: 'store', method: 'put'}, (e, v) => {
+            console.log('successfully sent in mem, ', e, v)
             callback(e, v); 
           })
     })

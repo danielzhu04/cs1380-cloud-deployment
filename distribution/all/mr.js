@@ -411,6 +411,7 @@ function mr(config) {
                                     } else {
                                       console.log("no need to change retlist");
                                     }
+                                    console.log("******ABOUT TO CALL BACK FROM MR");
                                     cb(null, retList);
                                     return;
                                   });

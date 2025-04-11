@@ -56,19 +56,33 @@ function serialize(object) {
 
 function deserialize(string) {
   console.log("IN DESERIALIZE, TRYING TO SLICE STRING");
-  console.log("string length is", string.length);
+  // string = JSON.stringify(string);
+  // console.log("AFTER JSON STRINGIFY IN DESERIALIZE, ", string);
+  // string = string.replace(/\\n/g, "\\n")
+  //              .replace(/\\'/g, "\\'")
+  //              .replace(/\\"/g, '\\"')
+  //              .replace(/\\&/g, "\\&")
+  //              .replace(/\\r/g, "\\r")
+  //              .replace(/\\t/g, "\\t")
+  //              .replace(/\\b/g, "\\b")
+  //              .replace(/\\f/g, "\\f");
+  // // Remove non-printable and other non-valid JSON characters
+  // string = string.replace(/[\u0000-\u001F]+/g,"");
+  // console.log("string length is", string.length);
 
-  if (string.length < 115430) {
-    console.log("String too short to slice at 115430.");
-  } else {
-    console.log("FOUND IT!!!!!!!");
-    console.log(string.slice(115430, 115480));
-  }
+  // if (string.length < 115430) {
+  //   console.log("String too short to slice at 115430.");
+  // } else {
+  //   console.log("FOUND IT!!!!!!!");
+  //   console.log(string.slice(115430, 115480));
+  // }
   console.log("DONE WITH PARSING STRING");
   let parsedJson;
   try {
     parsedJson = JSON.parse(string);
   } catch (error) {
+    console.log("THE TYPEOF STR IS ", typeof string);
+    // console.log("STRING SUS IS ", string.toString('ascii'));
     return `Could not parse input JSON: ${error}`;
   }
   if (parsedJson.type == "number" || parsedJson.type == "string" || parsedJson.type == "boolean" || parsedJson.type == "null" || parsedJson.type == "unknown") {

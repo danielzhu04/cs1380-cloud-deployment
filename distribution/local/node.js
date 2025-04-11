@@ -25,6 +25,9 @@ const start = function(callback) {
       const gid = splitURL[1];
       const serviceName = splitURL[2];
       const methodName = splitURL[3];
+      console.log("PARSED GID IS ", gid);
+      console.log("SERVICENAME IS ", serviceName);
+      console.log("methodName is ", methodName);
 
       /*
 
@@ -69,6 +72,7 @@ const start = function(callback) {
 
             const serviceFunc = service[methodName];
             const args = deserialize(body);
+            console.log("IN NODE.JS, DESERIALIZED ARGS ARE ", args);
             serviceFunc(...args, (error, returnedVal) => {
               console.log("error is ", error);
               console.log("returned value is ", returnedVal);
