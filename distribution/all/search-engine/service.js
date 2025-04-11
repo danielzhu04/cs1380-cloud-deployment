@@ -8,11 +8,21 @@ const SE_LOG = log.LOG
 
 const https = require('https');
 const {convert} = require('html-to-text');
+const natural = require('natural');
 
 function search(config) {
     const context = {};
     context.gid = config.gid || 'all';
     context.hash = config.hash || global.distribution.util.id.naiveHash;
+
+    function stemHTML(html) {
+        const words = html.trim().split(' ');
+        stemmed = [];
+        words.forEach(word => {
+            stemmed.push(natural.PorterStemmer.stem(word));
+        });
+        return stemmed; // return a list of stemmed words 
+    }
     
     function getHTTP(config, callback) {
       console.log("IN THE GETHTTP FUNC");
@@ -135,7 +145,7 @@ function search(config) {
           console.log("IN INDEX REDUCER")
           const termsToUrls = {};
           values.forEach((html) => {
-              const terms = html.split(" ");
+              const terms = distribution[gid].search.stemHTML(html);
               terms.forEach((term) => {
                   if (!(term in termsToUrls)) {
                       termsToUrls[term] = {};
