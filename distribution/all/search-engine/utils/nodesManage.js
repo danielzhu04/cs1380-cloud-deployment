@@ -122,9 +122,7 @@ function setUpServer(cb) {
     distribution[gid].search.setup(config, (e, v) => {
         cb(e, v)
         return;
-    });
-    cb(null, "hi"); 
-    return; 
+    }); 
 }
 
 function searchKeyTerm(searchTerms, cb) {
