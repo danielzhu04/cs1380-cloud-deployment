@@ -68,43 +68,79 @@ function mr(config) {
       const nid = config["nid"];
       const uniqueID = config.uniqueID
       const nidValues = {[nid]: []}; // Format is <nid, [map results]>
-      let counter = 0;
-      keys.forEach((key) => {
-        // Retrieve each key from the distributed store
-        distribution[gid].store.get(key, (e, v) => {
-          if (e) {
-            callback(new Error(`Cannot get key from distributed store in map: ${e}`));
-            return;
-          }
-          // Apply the map function to the key 
-          console.log("key is ", key);
-          console.log("v is ", v);
-          const mapResult = config["map"](key, v, {"gid": gid});
-          console.log("AFTER RAW MAP, type of result is ", typeof mapResult);
-          // console.log("after map is ", mapResult);
-          if (mapResult instanceof Array) {
-            nidValues[nid] = nidValues[nid].concat(mapResult); // If result is an array, concat to existing array
-          } else {
-            nidValues[nid].push(mapResult); // If result is not an array, push to existing array 
-          }
+      // let counter = 0;
+      // keys.forEach((key) => {
+      //   // Retrieve each key from the distributed store
+      //   distribution[gid].store.get(key, (e, v) => {
+      //     if (e) {
+      //       callback(new Error(`Cannot get key from distributed store in map: ${e}`));
+      //       return;
+      //     }
+      //     // Apply the map function to the key 
+      //     console.log("key is ", key);
+      //     console.log("v is ", v);
+      //     const mapResult = config["map"](key, v, {"gid": gid});
+      //     console.log("AFTER RAW MAP, type of result is ", typeof mapResult);
+      //     // console.log("after map is ", mapResult);
+      //     if (mapResult instanceof Array) {
+      //       nidValues[nid] = nidValues[nid].concat(mapResult); // If result is an array, concat to existing array
+      //     } else {
+      //       nidValues[nid].push(mapResult); // If result is not an array, push to existing array 
+      //     }
 
-          counter += 1;
-          if (counter == keys.length) {
-            // Put each of the map results into the local store, format is <uniqueID, [map results]>
-            distribution.local.store.put(nidValues[nid], uniqueID, (e, v) => {
-              if (e) {
-                callback(new Error("Cannot put map results into local store"));
-                return;
-              }
+      //     counter += 1;
+      //     if (counter == keys.length) {
+      //       // Put each of the map results into the local store, format is <uniqueID, [map results]>
+      //       distribution.local.store.put(nidValues[nid], uniqueID, (e, v) => {
+      //         if (e) {
+      //           callback(new Error("Cannot put map results into local store"));
+      //           return;
+      //         }
 
-              console.log("About to return from map wrapper");
-              // console.log("ABOUT TO RET FROM MAP WRAPPER, nidvals are ", nidValues);
-              callback(null, nidValues);
-              return;
-            });
-          }
+      //         console.log("About to return from map wrapper");
+      //         // console.log("ABOUT TO RET FROM MAP WRAPPER, nidvals are ", nidValues);
+      //         callback(null, nidValues);
+      //         return;
+      //       });
+      //     }
+      //   });
+      // });
+      // Create an array of promises for each key.
+      const promises = keys.map(key => {
+        return new Promise((resolve, reject) => {
+          // Retrieve each key from the distributed store.
+          distribution[gid].store.get(key, (e, v) => {
+            if (e) return reject(new Error(`Cannot get key from distributed store in map: ${e}`));
+            console.log("key is ", key);
+            console.log("v is ", v);
+            // IMPORTANT: Await the async mapper here.
+            config["map"](key, v, { "gid": gid })
+              .then(mapResult => {
+                if (mapResult instanceof Array) {
+                  nidValues[nid] = nidValues[nid].concat(mapResult);
+                } else {
+                  nidValues[nid].push(mapResult);
+                }
+                resolve();
+              })
+              .catch(reject);
+          });
         });
       });
+
+      // Wait for all promises to resolve.
+      Promise.all(promises)
+        .then(() => {
+          distribution.local.store.put(nidValues[nid], uniqueID, (e, v) => {
+            if (e) {
+              callback(new Error("Cannot put map results into local store"));
+              return;
+            }
+            console.log("About to return from map wrapper");
+            callback(null, nidValues);
+          });
+        })
+        .catch(callback);
     }
 
     function shuffle(config, callback) {
@@ -279,7 +315,7 @@ function mr(config) {
             numResponses += 1;
             if (numResponses == Object.keys(nidsToKeys).length) {
               console.log("MAPRESULTS ARE: ", mapResults); // mapresults undefined
-              console.log("STARTING SHUFFLE PHASE");
+              console.log("STARTING SHUFFLE PHASE, NUM RESPONSES: ", Object.keys(nidsToKeys).length);
               // Start shuffle phase
               numResponses = 0;
               let shuffledPairs = {};

@@ -109,17 +109,19 @@ function search(config) {
           // console.log("GID: ", gid)
           console.log("ABOUT TO RUN GETHTTP");
           const plainText = await distribution[gid].search.getHTTP({ URL: fullURL });
-          store.put(plainText, key, (err, _) => {
-            if (err) {
-              console.log("ERROR 1");
-              // console.error(`Failed to store content for ${key}:`, err);
-            } else {
-              // console.log("STORED CONTENT SUCCESSFULLY");
-              // console.log(`Stored content for ${key}`);
-            }
-            // console.log("ABOUT TO RET FROM RAW MAPPER");
-            return [{ [fullURL]:  plainText}]; // return URL + html page content
-          })
+          const mapperResult = await new Promise((resolve, reject) => {
+            store.put(plainText, key, (err) => {
+              if (err) {
+                console.log("ERROR in store.put", err);
+                return reject(err);
+              }
+              console.log("ABOUT TO RESOLVE FROM RAW MAPPER");
+              // Pass the desired output through resolve so that mapperResult gets set properly.
+              resolve([{ [fullURL]: plainText }]);
+            });
+          });
+          
+          return mapperResult;
 
           // distribution[gid].search.getHTTP({"URL" : fullURL}, (e, data) => {
           //   // console.log("Error is ", e);

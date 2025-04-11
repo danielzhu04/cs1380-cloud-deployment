@@ -70,6 +70,7 @@ const start = function(callback) {
             const serviceFunc = service[methodName];
             const args = deserialize(body);
             serviceFunc(...args, (error, returnedVal) => {
+              console.log("IN NODE JS")
               if (gid == 'local' && error) {
                 errToRet = new Error(`Cannot execute service method: ${error}`);
                 res.end(serialize(errToRet));
