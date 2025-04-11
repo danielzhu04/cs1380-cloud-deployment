@@ -117,8 +117,7 @@ function shardURLs(cb) {
 
 function setUpServer(cb) {
     const config = {gid: gid, datasetKeys: datasetKeys}
-    SE_LOG("SETUP UP SERVER CALLED w/ config: ", config)
-    console.log("SETUP UP SERVER CALLED w/ config: ", config)
+    SE_LOG("SETUP UP SERVER CALLED w/ config: ", config.gid, config.datasetKeys)
     distribution[gid].search.setup(config, (e, v) => {
         cb(e, v)
         return;

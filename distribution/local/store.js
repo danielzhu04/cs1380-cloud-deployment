@@ -33,7 +33,6 @@ function put(state, configuration, callback) {
   let gid = 'local'
   let key = configuration
   let value = state 
-  // console.log("DATA: ", state)
   if (configuration && typeof configuration === 'object') {
     gid = configuration.gid 
     configuration = configuration.key 
@@ -42,7 +41,6 @@ function put(state, configuration, callback) {
   if (key == null) {
       key = toAlphaNum(id.getID(value))
   }
-  // console.log("my key in put: ", key)
   let dir = resolveNodeDir(gid)
   let path = `${dir}/${key}` 
   let serializedValue = serialize(value)
