@@ -19,10 +19,11 @@ function search(config) {
         if (typeof html != "string") {
             return new Error("Non-string HTML contents");
         }
-        const words = html.trim().split(' ');
+        const words = html.trim().split(/\s+/);
+        console.log("words is ", words);
         stemmed = [];
         words.forEach(word => {
-            stemmed.push(natural.PorterStemmer.stem(word));
+            stemmed.push(natural.PorterStemmer.stem(word.replace(/[^a-zA-Z0-9]/g, '')));
         });
         return stemmed; // return a list of stemmed words 
     }
@@ -95,6 +96,7 @@ function search(config) {
           values.forEach((html) => {
               const terms = distribution[gid].search.stemHTML(html);
               if (terms instanceof Error) {
+                console.log("TERMS RETURNED AN ERROR");
                 return terms;
               }
               
@@ -109,11 +111,17 @@ function search(config) {
               })
           });
 
+          console.log("AFTER POPULATING TERMSTOURLS");
+          console.log("Terms to urls is ", termsToUrls);
+
           const toReturn = [];
           Object.keys(termsToUrls).forEach((term) => {
               const tempList = [termsToUrls[term]];
               toReturn.push({[term]: tempList});
           });
+          
+          console.log("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
+          console.log("ToReturn is ", toReturn);
           return toReturn;
         };  
 

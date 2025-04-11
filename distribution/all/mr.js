@@ -305,7 +305,11 @@ function mr(config) {
                     Object.keys(nidsToNodes).forEach((nid) => {
                       const remote = {service: uniqueID, method: 'reduce', node: nidsToNodes[nid]};
                       const message = {gid: context.gid, reduce: configuration["reduce"], uniqueID: uniqueID};
+                      console.log("About to call reduce");
                       distribution.local.comm.send([message], remote, (e, v) => {
+                        console.log("AFTER CALLING REDUCE USING LOCAL COMM");
+                        console.log("AFTER reduce, e is ", e);
+                        console.log("AFTER reduce, v is ", v);
                         if (e) {
                           cb(new Error("Error reducing with local comm"));
                           return;

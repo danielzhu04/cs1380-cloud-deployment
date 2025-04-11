@@ -69,6 +69,7 @@ function send(message, remote, callback) {
 
         res.on('end', () => {
             const deserializedRes = deserialize(response);
+            console.log("DESERIALIZED RES IS ", deserializedRes);
             if (deserializedRes instanceof Error) {
                 callback(deserializedRes);
                 return;

@@ -30,6 +30,7 @@
     "commander": "^13.1.0",
     "html-to-text": "^9.0.5",
     "inquirer": "^12.5.0",
+    "lsof": "^0.0.4",
     "natural": "^8.0.1",
     "yargs": "^17.7.2"
   },

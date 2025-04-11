@@ -70,14 +70,25 @@ const start = function(callback) {
             const serviceFunc = service[methodName];
             const args = deserialize(body);
             serviceFunc(...args, (error, returnedVal) => {
+              console.log("error is ", error);
+              console.log("returned value is ", returnedVal);
+              // if (Array.isArray(returnedVal)) {
+              //   returnedVal.forEach((listItem) => {
+              //     console.log("list item in return list is: ");
+              //     console.log(listItem);
+              //   });
+              // }
               if (gid == 'local' && error) {
                 errToRet = new Error(`Cannot execute service method: ${error}`);
                 res.end(serialize(errToRet));
               } else if (gid != 'local') {
+                console.log("IN NON LOCAL");
                 const serializedRetVal = serialize({e: error, v: returnedVal});
                 res.end(serializedRetVal);
               } else {
+                console.log("IN LOCAL");
                 const serializedRetVal = serialize(returnedVal);
+                console.log("SERIALIZED ret val ", serializedRetVal);
                 res.end(serializedRetVal);
               }
             });

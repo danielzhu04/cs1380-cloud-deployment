@@ -55,6 +55,16 @@ function serialize(object) {
 
 
 function deserialize(string) {
+  console.log("IN DESERIALIZE, TRYING TO SLICE STRING");
+  console.log("string length is", string.length);
+
+  if (string.length < 115430) {
+    console.log("String too short to slice at 115430.");
+  } else {
+    console.log("FOUND IT!!!!!!!");
+    console.log(string.slice(115430, 115480));
+  }
+  console.log("DONE WITH PARSING STRING");
   let parsedJson;
   try {
     parsedJson = JSON.parse(string);
@@ -92,6 +102,9 @@ function deserialize(string) {
     return `cannot deserialize string ${string}`;
   }
 }
+
+// const serialize = require('@brown-ds/distribution/distribution/util/serialization').serialize;
+// const deserialize = require('@brown-ds/distribution/distribution/util/serialization').deserialize;
 
 module.exports = {
   serialize: serialize,
