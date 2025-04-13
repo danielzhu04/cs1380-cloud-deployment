@@ -25,9 +25,9 @@ const start = function(callback) {
       const gid = splitURL[1];
       const serviceName = splitURL[2];
       const methodName = splitURL[3];
-      console.log("PARSED GID IS ", gid);
-      console.log("SERVICENAME IS ", serviceName);
-      console.log("methodName is ", methodName);
+      // console.log("PARSED GID IS ", gid);
+      // console.log("SERVICENAME IS ", serviceName);
+      // console.log("methodName is ", methodName);
 
       /*
 
@@ -72,10 +72,10 @@ const start = function(callback) {
 
             const serviceFunc = service[methodName];
             const args = deserialize(body);
-            console.log("IN NODE.JS, DESERIALIZED ARGS ARE ", args);
+            // console.log("IN NODE.JS, DESERIALIZED ARGS ARE ", args);
             serviceFunc(...args, (error, returnedVal) => {
-              console.log("error is ", error);
-              console.log("returned value is ", returnedVal);
+              // console.log("error is ", error);
+              // console.log("returned value is ", returnedVal);
               // if (Array.isArray(returnedVal)) {
               //   returnedVal.forEach((listItem) => {
               //     console.log("list item in return list is: ");
@@ -86,13 +86,13 @@ const start = function(callback) {
                 errToRet = new Error(`Cannot execute service method: ${error}`);
                 res.end(serialize(errToRet));
               } else if (gid != 'local') {
-                console.log("IN NON LOCAL");
+                // console.log("IN NON LOCAL");
                 const serializedRetVal = serialize({e: error, v: returnedVal});
                 res.end(serializedRetVal);
               } else {
-                console.log("IN LOCAL");
+                // console.log("IN LOCAL");
                 const serializedRetVal = serialize(returnedVal);
-                console.log("SERIALIZED ret val ", serializedRetVal);
+                // console.log("SERIALIZED ret val ", serializedRetVal);
                 res.end(serializedRetVal);
               }
             });
@@ -119,7 +119,7 @@ const start = function(callback) {
 
   server.on('error', (error) => {
     server.close((e) => {
-      console.log("closing error: ", e)
+      // console.log("closing error: ", e)
       log(`Server error: ${error}`);
       throw error;
     });

@@ -30,10 +30,10 @@ function resolveNodeDir(gid) {
 
 
 function put(state, configuration, callback) {
-  console.log("** IN LOCAL STORE");
-  console.log("state is ", state);
-  console.log("config is ", configuration);
-  console.log("CALLBACK IS ", callback);
+  // console.log("** IN LOCAL STORE");
+  // console.log("state is ", state);
+  // console.log("config is ", configuration);
+  // console.log("CALLBACK IS ", callback);
   let gid = 'local'
   let key = configuration
   let value = state 

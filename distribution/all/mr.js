@@ -305,11 +305,11 @@ function mr(config) {
                     Object.keys(nidsToNodes).forEach((nid) => {
                       const remote = {service: uniqueID, method: 'reduce', node: nidsToNodes[nid]};
                       const message = {gid: context.gid, reduce: configuration["reduce"], uniqueID: uniqueID};
-                      console.log("About to call reduce");
+                      // console.log("About to call reduce");
                       distribution.local.comm.send([message], remote, (e, v) => {
-                        console.log("AFTER CALLING REDUCE USING LOCAL COMM");
-                        console.log("AFTER reduce, e is ", e);
-                        console.log("AFTER reduce, v is ", v);
+                        // console.log("AFTER CALLING REDUCE USING LOCAL COMM");
+                        // console.log("AFTER reduce, e is ", e);
+                        // console.log("AFTER reduce, v is ", v);
                         if (e) {
                           cb(new Error("Error reducing with local comm"));
                           return;
@@ -407,11 +407,11 @@ function mr(config) {
                                       Object.keys(objectTracker).forEach((term) => {
                                         retList.push({[term]: objectTracker[term]});
                                       });
-                                      console.log("should be returning new retList");
+                                      // ("should be returning new retList");
                                     } else {
-                                      console.log("no need to change retlist");
+                                      // console.log("no need to change retlist");
                                     }
-                                    console.log("******ABOUT TO CALL BACK FROM MR");
+                                    // console.log("******ABOUT TO CALL BACK FROM MR");
                                     cb(null, retList);
                                     return;
                                   });

@@ -18,10 +18,10 @@ const { serialize, deserialize } = require('../util/serialization');
  * @return {void}
  */
 function send(message, remote, callback) {
-    console.log("** IN LOCAL COMM");
-    console.log("message is ", message);
-    console.log("remote is ", remote);
-    console.log("Callback is ", callback);
+    // console.log("** IN LOCAL COMM");
+    // console.log("message is ", message);
+    // console.log("remote is ", remote);
+    // console.log("Callback is ", callback);
     if (typeof callback != 'function' || !(callback instanceof Function)) {
         callback = function() {};
     }
@@ -45,10 +45,10 @@ function send(message, remote, callback) {
         callback(new Error('Missing node fields'));
         return;
     }
-    console.log("PASSED LOCAL COMM CHECKS");
+    // console.log("PASSED LOCAL COMM CHECKS");
 
     const toSend = serialize(message);
-    console.log("******** SERIALIZED ARGS ARE ", toSend);
+    // console.log("******** SERIALIZED ARGS ARE ", toSend);
 
     let gid = 'local';
     if ('gid' in remote) {
@@ -75,7 +75,7 @@ function send(message, remote, callback) {
 
         res.on('end', () => {
             const deserializedRes = deserialize(response);
-            console.log("DESERIALIZED RES IS ", deserializedRes);
+            // console.log("DESERIALIZED RES IS ", deserializedRes);
             if (deserializedRes instanceof Error) {
                 callback(deserializedRes);
                 return;

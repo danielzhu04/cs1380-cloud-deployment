@@ -120,8 +120,8 @@ function search(config) {
               toReturn.push({[term]: tempList});
           });
           
-          console.log("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
-          console.log("ToReturn is ", toReturn);
+          // console.log("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
+          // console.log("ToReturn is ", toReturn);
           return toReturn;
         };  
 
@@ -131,6 +131,7 @@ function search(config) {
           console.log("E IS ", e);
           console.log("V IS ", v);
           callback(e, v);
+          return;
           // distribution[context.gid].store.put(v, "searchdb", (e, v) => {
           //   console.log("AFTER STORE PUT, e is ", e);
           //   console.log("AFTER STORE PUT, v is ", v);
@@ -138,8 +139,6 @@ function search(config) {
           //   callback(e, v);
           // });
         });
-
-        
     }
 
     function findMatchingInIndex(indexingFile, keyTerms) {
