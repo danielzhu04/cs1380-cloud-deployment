@@ -130,12 +130,13 @@ function search(config) {
           console.log("AFTER RUNNING MR EXEC");
           console.log("E IS ", e);
           console.log("V IS ", v);
-          distribution[context.gid].store.put(v, "searchdb", (e, v) => {
-            console.log("AFTER STORE PUT, e is ", e);
-            console.log("AFTER STORE PUT, v is ", v);
-            console.log("AFTER STORE PUT, cb is ", callback);
-            callback(e, v);
-          });
+          callback(e, v);
+          // distribution[context.gid].store.put(v, "searchdb", (e, v) => {
+          //   console.log("AFTER STORE PUT, e is ", e);
+          //   console.log("AFTER STORE PUT, v is ", v);
+          //   console.log("AFTER STORE PUT, cb is ", callback);
+          //   callback(e, v);
+          // });
         });
 
         

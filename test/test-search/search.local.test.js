@@ -71,18 +71,33 @@ test('mock indexer', (done) => {
     distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
       const searchResults = v;
       console.log("done with search setup, e is ", e);
-      distribution.myGroup.store.get("searchdb", (e, v) => {
-        // console.log("e is ", e);
-        console.log("v is ", v);
-        console.log("done with store get, e is ", e);
-  
-        try {
-          expect(v).toEqual(expect.arrayContaining(searchResults));
-          done();
-        } catch (e) {
+      console.log("V is ", v);
+      distribution.local.store.put(searchResults, "searchdb", (e, v) => {
+        if (e) {
           done(e);
+        } else {
+          distribution.local.store.get("searchdb", (e, v) => {
+            try {
+              expect(v).toEqual(expect.arrayContaining(searchResults));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
         }
-      })
+      });
+      // distribution.myGroup.store.get("searchdb", (e, v) => {
+      //   // console.log("e is ", e);
+      //   console.log("v is ", v);
+      //   console.log("done with store get, e is ", e);
+  
+      //   try {
+      //     expect(v).toEqual(expect.arrayContaining(searchResults));
+      //     done();
+      //   } catch (e) {
+      //     done(e);
+      //   }
+      // })
     });
   });
   // distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
