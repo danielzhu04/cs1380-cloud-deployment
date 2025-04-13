@@ -57,8 +57,12 @@ function serialize(object) {
 function deserialize(string) {
   let parsedJson;
   try {
-    parsedJson = JSON.parse(string);
+    let str = (typeof string === 'string') ? string : string.toString('utf8');
+    const sanitized = str.replace(/\\,/g, '\\');
+    parsedJson = JSON.parse(sanitized);
   } catch (error) {
+    console.log(string.toString('utf8').substring(392200, 392253));
+    console.log("ERROR IN DESERIALIZE, ERROR IS ", error);
     return `Could not parse input JSON: ${error}`;
   }
   if (parsedJson.type == "number" || parsedJson.type == "string" || parsedJson.type == "boolean" || parsedJson.type == "null" || parsedJson.type == "unknown") {

@@ -1,1 +1,8 @@
 ./6/61/old/manif12.txt
+./6/61/old/61.txt
+./6/61/old/manif11.txt
+./6/61/61-0.txt
+./6/6/666/666.txt
+./6/6/666/old/pgwpq04.txt
+./6/6/666/old/pgw050pq.txt
+./6/6/665/665.txt
