@@ -23,12 +23,15 @@ function search(config) {
         console.error("words is ", words);
         stemmed = [];
         words.forEach(word => {
-            stemmed.push(natural.PorterStemmer.stem(word.replace(/[^a-zA-Z0-9]/g, '')));
+          const stemmedWord = natural.PorterStemmer.stem(word.replace(/[^a-zA-Z0-9]/g, ''));
+          if (stemmedWord != '') {
+            stemmed.push(stemmedWord);
+          }
         });
-        console.error("words post stemming are ", stemmed);
-        stemmed.forEach((word) => {
-          console.error("THE CURRENT WORD IS ", word)
-        })
+        console.log("words post stemming are ", stemmed);
+        // stemmed.forEach((word) => {
+        //   console.log("THE CURRENT WORD IS ", word)
+        // })
         return stemmed; // return a list of stemmed words 
     }
     
@@ -116,7 +119,9 @@ function search(config) {
           });
 
           console.error("AFTER POPULATING TERMSTOURLS");
-          console.error("Terms to urls is ", termsToUrls);
+          console.log("Terms to urls is ", termsToUrls); // return terms to URLs
+          // Then modify mr reducer as well to handle object outputs instead of map outputs 
+          return termsToUrls;
 
           const toReturn = [];
           Object.keys(termsToUrls).forEach((term) => {
@@ -125,15 +130,19 @@ function search(config) {
           });
           
           // console.error("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
-          // console.error("ToReturn is ", toReturn);
+          // NOTE TO SELF: check if there is a current searchdb and if there is, append the results to that 
+          console.log("ToReturn is ", toReturn);
           return toReturn;
         };  
 
         const datasetKeys = configuration.datasetKeys
         distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
-          console.error("AFTER RUNNING MR EXEC");
-          console.error("E IS ", e);
-          console.error("V IS ", v);
+          console.log("AFTER RUNNING MR EXEC");
+          console.log("E IS ", e);
+          console.log("V IS ", v);
+          // v.forEach((currObj) => {
+          //   console.log("The current object is ", currObj);
+          // })
           callback(e, v);
           return;
           // distribution[context.gid].store.put(v, "searchdb", (e, v) => {

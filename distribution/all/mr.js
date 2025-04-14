@@ -158,6 +158,7 @@ function mr(config) {
       const gid = config["gid"];
       const aggregates = {};
       let keyValues = []; // Format is [{key: value}, ...]
+      let keyValuesObj = {};
 
       distribution.local.mem.getAll((e, allKeys) => {
         if (e) {
@@ -193,12 +194,28 @@ function mr(config) {
                 if (redResult instanceof Array) {
                   keyValues = keyValues.concat(redResult);
                 } else {
-                  keyValues.push(redResult);
+                  console.log("THE RESULT IS ", redResult);
+                  // Note: extremely implementation-specific design
+                  Object.keys(redResult).forEach((key) => {
+                    if (!(key in keyValuesObj)) {
+                      keyValuesObj[key] = [];
+                    }
+                    keyValuesObj[key] = keyValuesObj[key].concat(redResult[key]);
+                  });
+                  // keyValues.push(redResult); // change to edit object 
                 }
 
                 counter += 1;
                 if (counter == Object.keys(aggregates).length) {
-                  callback(null, keyValues);
+                  console.log("CALLING BACK, keyValuesObj is ", keyValuesObj);
+                  if (Object.keys(keyValuesObj).length > 0) {
+                    console.log("CALLING BACK WITH KEYVALUESOBJ");
+                    callback(null, keyValuesObj);
+                  } else {
+                    console.log("CALLING BACK WITH NORMAL KEYVALUES");
+                    callback(null, keyValues);
+                  }
+                  // callback(null, keyValues);
                   return;
                 }
               });
@@ -301,15 +318,16 @@ function mr(config) {
                     // Start reduce phase
                     numResponses = 0;
                     let retList = [];
-                    const objectTracker = {};
+                    const retObj = {};
+                    // const objectTracker = {};
                     Object.keys(nidsToNodes).forEach((nid) => {
                       const remote = {service: uniqueID, method: 'reduce', node: nidsToNodes[nid]};
                       const message = {gid: context.gid, reduce: configuration["reduce"], uniqueID: uniqueID};
-                      // console.log("About to call reduce");
+                      console.log("About to call reduce");
                       distribution.local.comm.send([message], remote, (e, v) => {
-                        // console.log("AFTER CALLING REDUCE USING LOCAL COMM");
-                        // console.log("AFTER reduce, e is ", e);
-                        // console.log("AFTER reduce, v is ", v);
+                        console.log("AFTER CALLING REDUCE USING LOCAL COMM");
+                        console.log("AFTER reduce, e is ", e);
+                        console.log("AFTER reduce, v is ", v);
                         if (e) {
                           cb(new Error("Error reducing with local comm"));
                           return;
@@ -318,47 +336,19 @@ function mr(config) {
                         if (v instanceof Array) {
                           if (Object.keys(v).length != 0) {
                             retList = retList.concat(v);
-
-                            // loop through elements in v and add to objecttracker
-                            Object.keys(v).forEach((key) => {
-                              if (v[key] instanceof Object) {
-                                const currKey = Object.keys(v[key])[0];
-                                const currVal = v[key][currKey];
-
-                                if (!(currKey in objectTracker)) {
-                                  objectTracker[currKey] = currVal;
-                                } else {
-                                  if (currVal instanceof Array) {
-                                    objectTracker[currKey] = objectTracker[currKey].concat(currVal);
-                                  } else {
-                                    objectTracker[currKey] = currVal;
-                                  }
-                                }
-                              }
-                            });
-
-                            // or can maybe check to see if v is of type object, and see if the
-                            // v key exists in retlist items -- can maybe loop through retlist
-                            // and then retrive keys, and then check to see if any key == v key
-                            // handle 2 cases: if list, then concat, else if number, then add
                           }
                         } else {
-                          retList.push(v);
-                          if (v instanceof Object) {
-                            const key = Object.keys(v)[0];
-                            const val = v[key];
-
-                            if (!(key in objectTracker)) {
-                              objectTracker[key] = val;
-                            } else {
-                              if (val instanceof Array) {
-                                objectTracker[key] = objectTracker[key].concat(val);
-                              } else {
-                                objectTracker[key] = val;
-                              }
+                          console.log("IN NON-ARRAY RETLIST REDUCE CHECK");
+                          Object.keys(v).forEach((key) => {
+                            if (!(key in retObj)) {
+                              retObj[key] = [];
                             }
-                          }
+                            retObj[key] = retObj[key].concat(v[key]);
+                          })
+                          // retList.push(v);
                         }
+                        console.log("after populating retlist or retobj");
+
                         // NEXT STEPS: need to check if something is an object and if so, 
                         // somehow merge results together
                         // maybe check for each obj in retlist, if that obj shares
@@ -372,21 +362,36 @@ function mr(config) {
                         if (numResponses == numNodes) {
                           // Done with all 3 phases, starting teardown
                           // NEED TO UPDATE OBJECT TRACKER
-                         
+                          console.log("sorting retobj");
                           try {
-                            if (Object.keys(objectTracker).length > 0 && Object.values(objectTracker)[0] instanceof Array) {
-                              
-                              Object.keys(objectTracker).forEach((term) => {
-                                objectTracker[term].sort((x, y) => { // sort a list of {k: v} objects
+                            if (Object.keys(retObj).length > 0 && Object.values(retObj)[0] instanceof Array) { 
+                              Object.keys(retObj).forEach((term) => {
+                                retObj[term].sort((x, y) => {
                                   return Object.values(y)[0] - Object.values(x)[0];
                                 });
                               });
-                            } else {
-                              
+                              console.log("FINISHED RETOBJ IS ", retObj);
                             }
                           } catch (error) {
-                           
+                            console.error("ERROR IN SORTING ", error);
                           }
+                          
+                         
+                          // try {
+                          //   if (Object.keys(objectTracker).length > 0 && Object.values(objectTracker)[0] instanceof Array) {
+                              
+                          //     Object.keys(objectTracker).forEach((term) => {
+                          //       objectTracker[term].sort((x, y) => { // sort a list of {k: v} objects
+                          //         return Object.values(y)[0] - Object.values(x)[0];
+                          //       });
+                          //     });
+                          //   } else {
+                              
+                          //   }
+                          // } catch (error) {
+                           
+                          // }
+                          console.log("passed sorting phase, in cleanup phase");
 
                           let remNodeCount = 0; 
                           Object.keys(nodesTOCleanup).forEach(nk => {
@@ -397,22 +402,31 @@ function mr(config) {
                               remNodeCount += 1
                               
                               if (remNodeCount == Object.keys(nodesTOCleanup).length) {
+                                console.log("reached remnodecount");
                                 distribution[context.gid].mem.delAll((e, v) => {
                                   distribution[context.gid].routes.rem(mrTempService, uniqueID, (e1, v1) => {
                                     // NOTE: return object tracker if its key list is nonempty
                                     // cb(null, retList);
-                                    if (Object.keys(objectTracker).length > 0) {
-                                      // change retlist;
-                                      retList = [];
-                                      Object.keys(objectTracker).forEach((term) => {
-                                        retList.push({[term]: objectTracker[term]});
-                                      });
-                                      // ("should be returning new retList");
+                                    // if (Object.keys(objectTracker).length > 0) {
+                                    //   // change retlist;
+                                    //   retList = [];
+                                    //   Object.keys(objectTracker).forEach((term) => {
+                                    //     retList.push({[term]: objectTracker[term]});
+                                    //   });
+                                    //   // ("should be returning new retList");
+                                    // } else {
+                                    //   // console.log("no need to change retlist");
+                                    // }
+                                    console.log("about to return entirely");
+                                    if (Object.keys(retObj).length > 0) {
+                                      console.log("returning retobj, retobj is ", retObj);
+                                      cb(null, retObj);
                                     } else {
-                                      // console.log("no need to change retlist");
+                                      console.log("returning retlist, retlist is ", retList);
+                                      cb(null, retList);
                                     }
-                                    // console.log("******ABOUT TO CALL BACK FROM MR");
-                                    cb(null, retList);
+                                    console.log("******ABOUT TO CALL BACK FROM MR");
+                                    // cb(null, retList);
                                     return;
                                   });
                               })

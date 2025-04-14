@@ -97,9 +97,37 @@ function setUpServer(batchKeys, cb) {
     const config = { gid: gid, datasetKeys: batchKeys };
     SE_LOG("SETUP SERVER CALLED w/ config:", config.gid, config.datasetKeys);
     distribution[gid].search.setup(config, (e, v) => {
-        distribution.local.store.put(v, 'searchdb', (e, v) => {
-            cb(e, v);
+        // Maybe do updating index here (might need to change mr)
+        // distribution.local.store.get(searchdb) <-- get object of terms: [{}]
+        // then just directly do put 
+        let newdb = v;
+        distribution.local.store.get("searchdb", (e, v) => {
+            // note to self: must delete old searchdb file before running program
+            if (!e) { // have a searchdb file
+                console.log("have a search db file already");
+                Object.keys(v).forEach((key) => {
+                    if (!(key in newdb)) {
+                        newdb[key] = [];
+                    }
+                    newdb[key] = newdb[key].concat(v[key]);
+                });
+
+                // sort everything
+                Object.keys(newdb).forEach((term) => {
+                    newdb[term].sort((x, y) => {
+                        return Object.values(y)[0] - Object.values(x)[0];
+                    });
+                });
+            } else {
+                console.log('error getting searchdb, ', e);
+            }
+            distribution.local.store.put(newdb, 'searchdb', (e, v) => {
+                cb(e, v);
+            });
         });
+        // distribution.local.store.put(v, 'searchdb', (e, v) => {
+        //     cb(e, v);
+        // });
     });
 }
 

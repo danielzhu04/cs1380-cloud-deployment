@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const id = distribution.util.id;
 
-jest.setTimeout(1000000);
+jest.setTimeout(5000);
 
 const myGroup = {};
 
@@ -72,7 +72,8 @@ test('mock indexer', (done) => {
         distribution.local.store.get("searchdb", (e, v) => {
           console.log('v is ', v);
           try {
-            expect(v.length).toBe(searchResults.length);
+            // expect(v.length).toBe(searchResults.length);
+            expect(Object.keys(v)).toEqual(expect.arrayContaining(Object.keys(searchResults)));
             done();
           } catch (e) {
             done(e);
