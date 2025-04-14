@@ -93,38 +93,91 @@ function setUpURLs(dataPath, cb) {
     }
 }
 
-function shardURLs(cb) {
-    if (dataset.length === 0) {
-        cb(null, 'empty') 
-        return
-    }
-
-    let cntr = 0;
-      // Send the dataset to the worker nodes. 
-      dataset.forEach((o) => {
-        const key = Object.keys(o)[0];
-        const value = o[key];
-        distribution[gid].store.put(value, key, (e, v) => {
-          cntr++;
-          // Return to main repl once done. 
-          if (cntr === dataset.length) {
-            cb(e, v)
-            return; 
-          }
+function setUpServer(batchKeys, cb) {
+    const config = { gid: gid, datasetKeys: batchKeys };
+    SE_LOG("SETUP SERVER CALLED w/ config:", config.gid, config.datasetKeys);
+    distribution[gid].search.setup(config, (e, v) => {
+        distribution.local.store.put(v, 'searchdb', (e, v) => {
+            cb(e, v);
         });
     });
 }
 
-function setUpServer(cb) {
-    const config = {gid: gid, datasetKeys: datasetKeys}
-    SE_LOG("SETUP UP SERVER CALLED w/ config: ", config.gid, config.datasetKeys)
-    distribution[gid].search.setup(config, (e, v) => {
-        distribution.local.store.put(v, 'searchdb', (e,v) => {
-            cb(e, v)
-            return;
-        })
-    }); 
+function processBatch(batch, cb) {
+    let cntr = 0;
+    let batchKeys = []; // Collect keys for this batch
+    
+    batch.forEach(o => {
+      const key = Object.keys(o)[0];
+      const value = o[key];
+      batchKeys.push(key);
+      
+      // Shard: Store the URL's value with its key.
+      distribution[gid].store.put(value, key, (e, v) => {
+        cntr++;
+        if (e) {
+          return cb(e);
+        }
+        // When all URLs in the batch have been processed:
+        if (cntr === batch.length) {
+          // Now setup the server for this batch:
+          setUpServer(batchKeys, (e, v) => {
+            if (e) {
+              return cb(e);
+            }
+            cb(null, v);
+          });
+        }
+      });
+    });
 }
+
+function processAllBatches(finalCallback) {
+    if (dataset.length === 0) {
+      return finalCallback(null, "All batches processed");
+    }
+    
+    // Extract the next batch (up to 4 URLs)
+    const batch = dataset.splice(0, 4);
+    processBatch(batch, (err, result) => {
+      if (err) return finalCallback(err);
+      // After processing this batch, process the next one recursively.
+      processAllBatches(finalCallback);
+    });
+}
+
+// function shardURLs(cb) {
+//     if (dataset.length === 0) {
+//         cb(null, 'empty') 
+//         return
+//     }
+
+//     let cntr = 0;
+//       // Send the dataset to the worker nodes. 
+//       dataset.forEach((o) => {
+//         const key = Object.keys(o)[0];
+//         const value = o[key];
+//         distribution[gid].store.put(value, key, (e, v) => {
+//           cntr++;
+//           // Return to main repl once done. 
+//           if (cntr === dataset.length) {
+//             cb(e, v)
+//             return; 
+//           }
+//         });
+//     });
+// }
+
+// function setUpServer(cb) {
+//     const config = {gid: gid, datasetKeys: datasetKeys}
+//     SE_LOG("SETUP UP SERVER CALLED w/ config: ", config.gid, config.datasetKeys)
+//     distribution[gid].search.setup(config, (e, v) => {
+//         distribution.local.store.put(v, 'searchdb', (e,v) => {
+//             cb(e, v)
+//             return;
+//         })
+//     }); 
+// }
 
 function searchKeyTerm(searchTerms, cb) {
     const config = {gid: gid, terms: searchTerms}
@@ -144,7 +197,8 @@ module.exports = {
     setUpNodes: setUpNodes, 
     shutDownNodes: shutDownNodes,
     setUpURLs: setUpURLs,  
-    shardURLs: shardURLs, 
+    // shardURLs: shardURLs, 
+    processAllBatches: processAllBatches,
     setUpServer: setUpServer,
     searchKeyTerm: searchKeyTerm 
 }

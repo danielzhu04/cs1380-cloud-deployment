@@ -247,20 +247,29 @@ function manageQueryBooks() {
             nodesManager.setUpURLs(path, (e, v) => {
                 const urlCount = v
                 if (!e) {
-                    nodesManager.shardURLs((e, v) => {
-                        if (!e) {
-                            console.error(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
-                            nodesManager.setUpServer((e, v) => {
-                                if (!e) {
-                                    SE_FLOG(`Setup Seach Engine Server 🚀`) 
-                                    SE_FLOG(`${searchEngineName} is ready!!`)  
-                                }
-                            });
+                    // nodesManager.shardURLs((e, v) => {
+                    //     if (!e) {
+                    //         console.error(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
+                    //         nodesManager.setUpServer((e, v) => {
+                    //             if (!e) {
+                    //                 SE_FLOG(`Setup Seach Engine Server 🚀`) 
+                    //                 SE_FLOG(`${searchEngineName} is ready!!`)  
+                    //             }
+                    //         });
+                    //     } else {
+                    //         SE_ERROR(`Fail to shard intial URL keys for ${searchEngineName}: ${e}`) 
+                    //         onExit(); 
+                    //     }
+                    // })
+                    nodesManager.processAllBatches((err, result) => {
+                        if (err) {
+                          SE_ERROR(`Failed to process URL batches for ${searchEngineName}: ${err}`);
+                          onExit();
                         } else {
-                            SE_ERROR(`Fail to shard intial URL keys for ${searchEngineName}: ${e}`) 
-                            onExit(); 
+                          SE_FLOG(`All batches processed. Setting up Search Engine Server 🚀`);
+                          SE_FLOG(`${searchEngineName} is ready!!`);
                         }
-                    })
+                    });
                 } else {
                     SE_ERROR(`${searchEngineName} is not ready (setting up URL data source) ${e}`) 
                     onExit(); 

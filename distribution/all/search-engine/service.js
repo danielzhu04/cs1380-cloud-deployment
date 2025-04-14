@@ -25,6 +25,10 @@ function search(config) {
         words.forEach(word => {
             stemmed.push(natural.PorterStemmer.stem(word.replace(/[^a-zA-Z0-9]/g, '')));
         });
+        console.error("words post stemming are ", stemmed);
+        stemmed.forEach((word) => {
+          console.error("THE CURRENT WORD IS ", word)
+        })
         return stemmed; // return a list of stemmed words 
     }
     
