@@ -20,7 +20,7 @@ function search(config) {
             return new Error("Non-string HTML contents");
         }
         const words = html.trim().split(/\s+/);
-        console.log("words is ", words);
+        console.error("words is ", words);
         stemmed = [];
         words.forEach(word => {
             stemmed.push(natural.PorterStemmer.stem(word.replace(/[^a-zA-Z0-9]/g, '')));
@@ -73,7 +73,7 @@ function search(config) {
 
           // Store the fetched text with key = original incomplete URL
           const plainText = await distribution[gid].search.getHTTP({ URL: fullURL });
-          console.log("GOT TEXT FROM: ", fullURL, "PUTTING CONTENT IN NODE (MAP STAGE)")
+          console.error("GOT TEXT FROM: ", fullURL, "PUTTING CONTENT IN NODE (MAP STAGE)")
           const mapperResult = await new Promise((resolve, reject) => {
             store.put(plainText, key, (err) => {
               if (err) {
@@ -96,7 +96,7 @@ function search(config) {
           values.forEach((html) => {
               const terms = distribution[gid].search.stemHTML(html);
               if (terms instanceof Error) {
-                console.log("TERMS RETURNED AN ERROR");
+                console.error("TERMS RETURNED AN ERROR");
                 return terms;
               }
               
@@ -111,8 +111,8 @@ function search(config) {
               })
           });
 
-          console.log("AFTER POPULATING TERMSTOURLS");
-          console.log("Terms to urls is ", termsToUrls);
+          console.error("AFTER POPULATING TERMSTOURLS");
+          console.error("Terms to urls is ", termsToUrls);
 
           const toReturn = [];
           Object.keys(termsToUrls).forEach((term) => {
@@ -120,62 +120,69 @@ function search(config) {
               toReturn.push({[term]: tempList});
           });
           
-          // console.log("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
-          // console.log("ToReturn is ", toReturn);
+          // console.error("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
+          // console.error("ToReturn is ", toReturn);
           return toReturn;
         };  
 
         const datasetKeys = configuration.datasetKeys
         distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
-          console.log("AFTER RUNNING MR EXEC");
-          console.log("E IS ", e);
-          console.log("V IS ", v);
+          console.error("AFTER RUNNING MR EXEC");
+          console.error("E IS ", e);
+          console.error("V IS ", v);
           callback(e, v);
           return;
           // distribution[context.gid].store.put(v, "searchdb", (e, v) => {
-          //   console.log("AFTER STORE PUT, e is ", e);
-          //   console.log("AFTER STORE PUT, v is ", v);
-          //   console.log("AFTER STORE PUT, cb is ", callback);
+          //   console.error("AFTER STORE PUT, e is ", e);
+          //   console.error("AFTER STORE PUT, v is ", v);
+          //   console.error("AFTER STORE PUT, cb is ", callback);
           //   callback(e, v);
           // });
         });
     }
 
-    function findMatchingInIndex(indexingFile, keyTerms) {
+    function findMatchingInIndex(file, keyTerms) {
+      // console.log("THE FILE: ", file, "term: ", keyTerms)
       keyTerms = keyTerms.replace(/\n/g, ' ');
       keyTerms = keyTerms.trim();
 
-      const matchingLines = [];
-      try {
-        const data = fs.readFileSync(indexingFile, 'utf8');
-        const fileContents = data.split('\n');
-
-        fileContents.forEach((entry) => {
-          const entryContents = entry.split(' | ');
-          if (entryContents[0]) {
-            const term = entryContents[0].trim();
-            
-            // Matching criteria of what should be returned. 
-            if (term.toLowerCase()
-                .split(' ')
-                .some(str => keyTerms.includes(str) || str.includes(keyTerms))) {
-              matchingLines.push(entry);
-            }
+      let matchingLines = [];
+      if (file != null) {   
+        // console.log("FILE IS NOT NUL!")
+        file.forEach(tIdx => {
+          const term = Object.keys(tIdx)[0]
+          const freqs = tIdx[term]
+          // console.log('term: ', term, 'freq: ', freqs)
+          // Matching criteria of what should be returned. 
+          // if (term.toLowerCase()
+          //     .split(' ')
+          //     .some(str => keyTerms.includes(str) || str.includes(keyTerms))) {
+          //   matchingLines.push(entry);
+          // }
+          if (keyTerms == term.toLocaleLowerCase().trim()) {
+            // console.log("MATCH, ", tIdx)
+            matchingLines = tIdx
           }
-        });
-      } catch (e) {
-        console.log("Not a valid global index file, ", indexingFile, " -- can't be read. ", e)
-        return null; 
-      }
+        })
+      } 
 
       // Print matching lines. 
       return matchingLines
     }
 
     function query(configuration, callback) {
-      let globalIndexFile = "../../../test/search-mock-files/global-index.txt"; 
-      const results = findMatchingInIndex(globalIndexFile, configuration.terms)
-      callback(null, results);
+      // console.log("ENTERED QUERY SERVICE: ", configuration)
+      distribution.local.store.get('searchdb', (e,v) => {
+        // console.log("THE LOCAL GET NODE ID: ", distribution.node.config)
+        // console.log('In QUERY, getting values of searchdb', v, "e: ", e)
+        if (v) {
+          let results = findMatchingInIndex(v, configuration.terms)
+          // console.log("RESULT FOUND: ", results)
+          callback(null, results);
+        } else {
+          callback(null, [])
+        }
+      })  
     }
 
     return {

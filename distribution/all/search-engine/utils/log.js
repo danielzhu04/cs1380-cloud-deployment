@@ -17,7 +17,17 @@ function LOG(msg, arrArgs) {
     }
 }
 
+function FLOG(msg, arrArgs) {
+    let prefix = "-> "
+    if (arrArgs) {
+        console.error(prefix + msg + arrArgs)   
+    } else {
+        console.error(prefix + msg)   
+    }
+}
+
 module.exports = {
     ERROR: ERROR, 
-    LOG: LOG
+    LOG: LOG, 
+    FLOG: FLOG, 
 }

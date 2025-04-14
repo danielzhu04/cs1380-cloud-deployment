@@ -7,6 +7,7 @@ const nodesManager = require('./utils/nodesManage')
 const log = require('./utils/log')
 const SE_ERROR = log.ERROR
 const SE_LOG = log.LOG
+const SE_FLOG = log.FLOG
 
 // SEARCH ENGINE CONFIGs (defined in ./engineConfig): 
 const searchEngineName = engineConfig.searchEngineName
@@ -62,6 +63,7 @@ async function startPrompt() {
             break; 
         case '📚Query Books':
             queryWithMetadata = await selectResultType();
+            searchRepl();
             manageQueryBooks(); 
             break; 
         default: 
@@ -86,17 +88,20 @@ async function enterSearchTerm() {
 
 async function search(searchTerms) {
     SE_LOG("🔍 Querying for: " + searchTerms)
+    if (searchTerms == null || searchTerms == undefined || searchTerms.length == 0) {
+        return; 
+    }
 
     // Stem all parts of search terms for closer match. 
     const stemmedSearchTerms = engineConfig.stemmer(searchTerms)
    
     nodesManager.searchKeyTerm(stemmedSearchTerms, (e,v) => {
         if (e) {
-            console.log("Querying Failed! for search keywords: ", searchTerms, " Error: ", e)
+            SE_ERROR("Querying Failed! for search keywords: ", searchTerms, " Error: ", e)
             return null;  
         } else {
             let searchResult = v
-            console.log("RESULTS: ", searchResult)
+            SE_LOG("RESULTS: ", searchResult)
             SE_LOG("Querying Success! Formatting and returning Results.")
 
             // Format search result into table format.  
@@ -106,61 +111,82 @@ async function search(searchTerms) {
                 || searchResult.length == 0) {
                 formattedReuslt = "No matching pages found..."
             } else {
-                let linkToTerms = {} // Build map from link to the index term they were found. 
-                let linkToFreq = {} // Build map from link to the freq this link was found.  
 
-                // Go through each returned matching results, and parse through 
-                // the global index entries. 
-                searchResult.forEach((res) => {
-                    const splits = res.split('|') // word | link1 3 link2 6 
-                    const terms = splits[0].trim() // word 
-                    const linkFreq = splits[1].trim() // link1 3 link2 6
-                    const httpRegex = /(https?:\/\/[^\s]+)\s(\d+)/g;
-                    while ((lf = httpRegex.exec(linkFreq)) !== null) {
-                        const link = lf[1].trim() // link1 
-                        const freq = lf[2].trim() // 3 
-                        if (!(link in linkToFreq)) {
-                            linkToFreq[link] = 0
-                        }
-                        if (!(link in linkToTerms)) {
-                            linkToTerms[link] = []
-                        }
-                        linkToFreq[link] += Number(freq)
-                        linkToTerms[link].push(terms)
-                    }
-                })
+                const terms = Object.keys(searchResult)[0] // word 
+                const linkFreq = searchResult[terms] // link1 3 link2 6
 
-                // Sort {links: freq} by most frequent and push links into 
-                // links only array for no metadata result. 
-                let linksOnlySorted = {};
-                const linksSorted = Object.entries(linkToFreq).sort((a, b) => b[1] - a[1]);
-                linksSorted.forEach((linkFreq) => {
-                    linksOnlySorted[linkFreq[0]] = linkFreq[1] 
-                })
+                // let linkToTerms = {} // Build map from link to the index term they were found. 
+                // let linkToFreq = {} // Build map from link to the freq this link was found.  
+
+                // // Go through each returned matching results, and parse through 
+                // // the global index entries. 
+                // searchResult.forEach((res) => {
+                //     const terms = Object.keys(res) // word 
+                //     console.log("terms: ", terms)
+                //     const linkFreq = Object.values(res) // link1 3 link2 6
+                //     console.log("values: ", linkFreq)
+                //     const httpRegex = /(https?:\/\/[^\s]+)\s(\d+)/g;
+                //     while ((lf = httpRegex.exec(linkFreq)) !== null) {
+                //         const link = lf[1].trim() // link1 
+                //         const freq = lf[2].trim() // 3 
+                //         if (!(link in linkToFreq)) {
+                //             linkToFreq[link] = 0
+                //         }
+                //         if (!(link in linkToTerms)) {
+                //             linkToTerms[link] = []
+                //         }
+                //         linkToFreq[link] += Number(freq)
+                //         linkToTerms[link].push(terms)
+                //     }
+                // })
+
+                // // Sort {links: freq} by most frequent and push links into 
+                // // links only array for no metadata result. 
+                // let linksOnlySorted = {};
+                // const linksSorted = Object.entries(linkToFreq).sort((a, b) => b[1] - a[1]);
+                // linksSorted.forEach((linkFreq) => {
+                //     linksOnlySorted[linkFreq[0]] = linkFreq[1] 
+                // })
 
                 // Format querying results based on if the user chose metadata 
                 // or just with links rankd in frequnecy first. 
                 if (queryWithMetadata) {
                     const t = new table({
                         head: ['Link', 'Frequency', 'Index terms'],
-                        colWidths: [50, 13, 50], 
+                        colWidths: [80, 13, 50], 
                         wordWrap: true
                     });
-                    
-                    Object.entries(linksOnlySorted).forEach(([link, freq]) => {
-                        const terms = linkToTerms[link].join(', ')
+
+                    linkFreq.forEach((res) => {
+                        link = Object.keys(res)[0]
+                        freq = Object.values(res)[0]
                         t.push([link, freq, terms]);
-                    });
+                    })
+                    
+                    // Object.entries(linkFreq).forEach(([link, freq]) => {
+                    //     console.log("link: ", link)
+                    //     console.log('freq: ', freq)
+                    //     const terms = terms
+                    //     t.push([link, freq, terms]);
+                    // });
                     formattedReuslt = t
                 } else {
                     const t = new table({
                         head: ['Link', 'Frequency'],
-                        colWidths: [60, 13], 
+                        colWidths: [80, 13], 
                         wordWrap: true
                     });
-                    Object.entries(linksOnlySorted).forEach(([link, count]) => {
-                        t.push([link, count]);
-                    });
+                    // Object.entries(linksOnlySorted).forEach(([link, count]) => {
+                    //     t.push([link, count]);
+                    // });
+                    linkFreq.forEach((res) => {
+                        link = Object.keys(res)[0]
+                        console.log("link: ", link)
+                        freq = Object.values(res)[0]
+                        console.log("freq: ", freq)
+                        console.log("terms: ", terms)
+                        t.push([link, freq]);
+                    })
                     formattedReuslt = t
                 }
             }
@@ -213,7 +239,7 @@ function onExit() {
 // This includes calling crawling and indexing. 
 function manageQueryBooks() {
     let selectedType = "📚 Query Books"
-    SE_LOG(`Setting up server and ${engineConfig.workerNodesCount} worker nodes for search engine.`) 
+    SE_FLOG(`Setting up server and ${engineConfig.workerNodesCount} worker nodes for search engine.`)  
     nodesManager.setUpNodes((e, v) => {
         if (!e) {
             localServer = v 
@@ -223,14 +249,11 @@ function manageQueryBooks() {
                 if (!e) {
                     nodesManager.shardURLs((e, v) => {
                         if (!e) {
-                            SE_LOG(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
+                            console.error(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
                             nodesManager.setUpServer((e, v) => {
                                 if (!e) {
-
-                                    SE_LOG(`Setup Seach Engine Server 🚀`) 
-                                    SE_LOG(`${searchEngineName} is ready!!`)  
-
-                                    searchRepl(); 
+                                    SE_FLOG(`Setup Seach Engine Server 🚀`) 
+                                    SE_FLOG(`${searchEngineName} is ready!!`)  
                                 }
                             });
                         } else {
