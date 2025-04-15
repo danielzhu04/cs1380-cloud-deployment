@@ -194,7 +194,7 @@ function mr(config) {
                 if (redResult instanceof Array) {
                   keyValues = keyValues.concat(redResult);
                 } else {
-                  console.log("THE RESULT IS ", redResult);
+                  // console.log("THE RESULT IS ", redResult);
                   // Note: extremely implementation-specific design
                   Object.keys(redResult).forEach((key) => {
                     if (!(key in keyValuesObj)) {
@@ -207,7 +207,7 @@ function mr(config) {
 
                 counter += 1;
                 if (counter == Object.keys(aggregates).length) {
-                  console.log("CALLING BACK, keyValuesObj is ", keyValuesObj);
+                  // console.log("CALLING BACK, keyValuesObj is ", keyValuesObj);
                   if (Object.keys(keyValuesObj).length > 0) {
                     console.log("CALLING BACK WITH KEYVALUESOBJ");
                     callback(null, keyValuesObj);
@@ -242,6 +242,7 @@ function mr(config) {
     // Register temporary service endpoint on each node
     distribution[context.gid].routes.put(mrTempService, uniqueID, (e, v) => {
       if (Object.keys(e).length != 0) {
+        console.log("e is ", e);
         cb(new Error('Cannot create temporary service endpoint'));
         return;
       }
@@ -327,7 +328,7 @@ function mr(config) {
                       distribution.local.comm.send([message], remote, (e, v) => {
                         console.log("AFTER CALLING REDUCE USING LOCAL COMM");
                         console.log("AFTER reduce, e is ", e);
-                        console.log("AFTER reduce, v is ", v);
+                        // console.log("AFTER reduce, v is ", v);
                         if (e) {
                           cb(new Error("Error reducing with local comm"));
                           return;
@@ -370,7 +371,7 @@ function mr(config) {
                                   return Object.values(y)[0] - Object.values(x)[0];
                                 });
                               });
-                              console.log("FINISHED RETOBJ IS ", retObj);
+                              // console.log("FINISHED RETOBJ IS ", retObj);
                             }
                           } catch (error) {
                             console.error("ERROR IN SORTING ", error);
@@ -419,11 +420,13 @@ function mr(config) {
                                     // }
                                     console.log("about to return entirely");
                                     if (Object.keys(retObj).length > 0) {
-                                      console.log("returning retobj, retobj is ", retObj);
+                                      // console.log("returning retobj, retobj is ", retObj);
                                       cb(null, retObj);
+                                      return;
                                     } else {
-                                      console.log("returning retlist, retlist is ", retList);
+                                      // console.log("returning retlist, retlist is ", retList);
                                       cb(null, retList);
+                                      return;
                                     }
                                     console.log("******ABOUT TO CALL BACK FROM MR");
                                     // cb(null, retList);

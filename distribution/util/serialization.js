@@ -61,7 +61,7 @@ function deserialize(string) {
     const sanitized = str.replace(/\\,/g, '\\');
     parsedJson = JSON.parse(sanitized);
   } catch (error) {
-    console.log(string.toString('utf8').substring(392200, 392253));
+    // console.log(string.toString('utf8').substring(392200, 392253));
     console.log("ERROR IN DESERIALIZE, ERROR IS ", error);
     return `Could not parse input JSON: ${error}`;
   }

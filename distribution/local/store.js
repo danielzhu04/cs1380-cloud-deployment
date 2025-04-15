@@ -30,7 +30,7 @@ function resolveNodeDir(gid) {
 
 
 function put(state, configuration, callback) {
-  // console.log("** IN LOCAL STORE");
+  console.log("** IN LOCAL STORE PUT");
   // console.log("state is ", state);
   // console.log("config is ", configuration);
   // console.log("CALLBACK IS ", callback);

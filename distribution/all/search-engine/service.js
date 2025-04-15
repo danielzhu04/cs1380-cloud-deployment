@@ -20,7 +20,7 @@ function search(config) {
             return new Error("Non-string HTML contents");
         }
         const words = html.trim().split(/\s+/);
-        console.error("words is ", words);
+        // console.error("words is ", words);
         stemmed = [];
         words.forEach(word => {
           const stemmedWord = natural.PorterStemmer.stem(word.replace(/[^a-zA-Z0-9]/g, ''));
@@ -28,7 +28,7 @@ function search(config) {
             stemmed.push(stemmedWord);
           }
         });
-        console.error("words post stemming are ", stemmed);
+        // console.error("words post stemming are ", stemmed);
         // stemmed.forEach((word) => {
         //   console.error("THE CURRENT WORD IS ", word)
         // })
@@ -62,10 +62,10 @@ function search(config) {
           reject(err);
         });
     
-        req.setTimeout(10000, () => {
-          req.destroy(); // Clean up the request
-          reject(new Error('Request timeout'));
-        });
+        // req.setTimeout(10000, () => {
+        //   req.destroy(); // Clean up the request
+        //   reject(new Error('Request timeout'));
+        // });
       }); 
     }
 
@@ -80,7 +80,7 @@ function search(config) {
 
           // Store the fetched text with key = original incomplete URL
           const plainText = await distribution[gid].search.getHTTP({ URL: fullURL });
-          console.error("GOT TEXT FROM: ", fullURL, "PUTTING CONTENT IN NODE (MAP STAGE)")
+          // console.error("GOT TEXT FROM: ", fullURL, "PUTTING CONTENT IN NODE (MAP STAGE)")
           const mapperResult = await new Promise((resolve, reject) => {
             store.put(plainText, key, (err) => {
               if (err) {
@@ -119,7 +119,7 @@ function search(config) {
           });
 
           console.error("AFTER POPULATING TERMSTOURLS");
-          console.error("Terms to urls is ", termsToUrls); // return terms to URLs
+          // console.error("Terms to urls is ", termsToUrls); // return terms to URLs
           // Then modify mr reducer as well to handle object outputs instead of map outputs 
           return termsToUrls;
 
@@ -139,7 +139,7 @@ function search(config) {
         distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
           console.error("AFTER RUNNING MR EXEC");
           console.error("E IS ", e);
-          console.error("V IS ", v);
+          // console.error("V IS ", v);
           // v.forEach((currObj) => {
           //   console.error("The current object is ", currObj);
           // })
@@ -190,11 +190,11 @@ function search(config) {
     function query(configuration, callback) {
       // console.log("ENTERED QUERY SERVICE: ", configuration)
       distribution.local.store.get('searchdb', (e,v) => {
-        console.log("THE LOCAL GET NODE ID: ", distribution.node.config)
+        // console.log("THE LOCAL GET NODE ID: ", distribution.node.config)
         // console.log('In QUERY, getting values of searchdb', v, "e: ", e)
         if (v) {
           let results = findMatchingInIndex(v, configuration.terms)
-          console.log("RESULT FOUND: ", results)
+          // console.log("RESULT FOUND: ", results)
           callback(null, results);
         } else {
           callback(null, [])

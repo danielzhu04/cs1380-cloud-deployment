@@ -13,6 +13,7 @@ const searchGroup = {};
 const n1 = engineConfig.workerNodes.n1
 const n2 = engineConfig.workerNodes.n2
 const n3 = engineConfig.workerNodes.n3
+const batchSize = 4;
 
 function addNodesToGroup() {
     searchGroup[id.getSID(n1)] = n1;
@@ -118,9 +119,10 @@ function setUpServer(batchKeys, cb) {
                         return Object.values(y)[0] - Object.values(x)[0];
                     });
                 });
-            } else {
-                console.log('error getting searchdb, ', e);
-            }
+            } 
+            // else {
+            //     console.log('error getting searchdb, ', e);
+            // }
             distribution.local.store.put(newdb, 'searchdb', (e, v) => {
                 cb(e, v);
             });
@@ -166,7 +168,7 @@ function processAllBatches(finalCallback) {
     }
     
     // Extract the next batch (up to 4 URLs)
-    const batch = dataset.splice(0, 4);
+    const batch = dataset.splice(0, batchSize);
     processBatch(batch, (err, result) => {
       if (err) return finalCallback(err);
       // After processing this batch, process the next one recursively.
