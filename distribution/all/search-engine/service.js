@@ -244,12 +244,17 @@ function search(config) {
 
     function query(configuration, callback) {
       // console.log("ENTERED QUERY SERVICE: ", configuration)
+      const start = performance.now();
       distribution.local.store.get('searchdb', (e,v) => {
         // console.log("THE LOCAL GET NODE ID: ", distribution.node.config)
         // console.log('In QUERY, getting values of searchdb', v, "e: ", e)
         if (v) {
+          const end = performance.now();
+          console.log(`[QUERY-TIMING] query latency: ${(end - start).toFixed(2)} ms`);
+          console.log(`[QUERY-TIMING] query throughput: ${(1/ ((end - start) / 1000)).toFixed(2)} queries/sec`);
           let results = findMatchingInIndex(v, configuration.terms)
           // console.log("RESULT FOUND: ", results)
+
           callback(null, results);
         } else {
           callback(null, [])
