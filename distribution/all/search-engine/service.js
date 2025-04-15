@@ -28,9 +28,9 @@ function search(config) {
             stemmed.push(stemmedWord);
           }
         });
-        console.log("words post stemming are ", stemmed);
+        console.error("words post stemming are ", stemmed);
         // stemmed.forEach((word) => {
-        //   console.log("THE CURRENT WORD IS ", word)
+        //   console.error("THE CURRENT WORD IS ", word)
         // })
         return stemmed; // return a list of stemmed words 
     }
@@ -119,7 +119,7 @@ function search(config) {
           });
 
           console.error("AFTER POPULATING TERMSTOURLS");
-          console.log("Terms to urls is ", termsToUrls); // return terms to URLs
+          console.error("Terms to urls is ", termsToUrls); // return terms to URLs
           // Then modify mr reducer as well to handle object outputs instead of map outputs 
           return termsToUrls;
 
@@ -131,17 +131,17 @@ function search(config) {
           
           // console.error("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
           // NOTE TO SELF: check if there is a current searchdb and if there is, append the results to that 
-          console.log("ToReturn is ", toReturn);
+          console.error("ToReturn is ", toReturn);
           return toReturn;
         };  
 
         const datasetKeys = configuration.datasetKeys
         distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
-          console.log("AFTER RUNNING MR EXEC");
-          console.log("E IS ", e);
-          console.log("V IS ", v);
+          console.error("AFTER RUNNING MR EXEC");
+          console.error("E IS ", e);
+          console.error("V IS ", v);
           // v.forEach((currObj) => {
-          //   console.log("The current object is ", currObj);
+          //   console.error("The current object is ", currObj);
           // })
           callback(e, v);
           return;
@@ -162,19 +162,23 @@ function search(config) {
       let matchingLines = [];
       if (file != null) {   
         // console.log("FILE IS NOT NUL!")
-        file.forEach(tIdx => {
-          const term = Object.keys(tIdx)[0]
-          const freqs = tIdx[term]
-          // console.log('term: ', term, 'freq: ', freqs)
+        Object.keys(file).forEach(key => {
+          // console.log("key: ", key)
+          // console.log('value: ', file[key])
+          const term = key
+          const freqs = file[key]
+          // console.log('term: ', term, 'freq: ', freqs, 'keyTerms: ', keyTerms)
           // Matching criteria of what should be returned. 
           // if (term.toLowerCase()
           //     .split(' ')
           //     .some(str => keyTerms.includes(str) || str.includes(keyTerms))) {
           //   matchingLines.push(entry);
           // }
-          if (keyTerms == term.toLocaleLowerCase().trim()) {
-            // console.log("MATCH, ", tIdx)
-            matchingLines = tIdx
+          if (keyTerms.trim() == term.toLocaleLowerCase().trim()) {
+            match = {key, freqs}
+            matchingLines.push(match)
+          } else {
+            // console.log("keyterm: ", keyTerms, 'term: ', term)
           }
         })
       } 
@@ -186,11 +190,11 @@ function search(config) {
     function query(configuration, callback) {
       // console.log("ENTERED QUERY SERVICE: ", configuration)
       distribution.local.store.get('searchdb', (e,v) => {
-        // console.log("THE LOCAL GET NODE ID: ", distribution.node.config)
+        console.log("THE LOCAL GET NODE ID: ", distribution.node.config)
         // console.log('In QUERY, getting values of searchdb', v, "e: ", e)
         if (v) {
           let results = findMatchingInIndex(v, configuration.terms)
-          // console.log("RESULT FOUND: ", results)
+          console.log("RESULT FOUND: ", results)
           callback(null, results);
         } else {
           callback(null, [])

@@ -111,7 +111,7 @@ async function search(searchTerms) {
                 || searchResult.length == 0) {
                 formattedReuslt = "No matching pages found..."
             } else {
-
+                console.log('ENTERRRRR')
                 const terms = Object.keys(searchResult)[0] // word 
                 const linkFreq = searchResult[terms] // link1 3 link2 6
 
@@ -157,18 +157,20 @@ async function search(searchTerms) {
                         wordWrap: true
                     });
 
-                    linkFreq.forEach((res) => {
-                        link = Object.keys(res)[0]
-                        freq = Object.values(res)[0]
-                        t.push([link, freq, terms]);
+                    searchResult.forEach((res) => {
+                        let linkSeen = []
+                        let key = res['key']
+                        let freq = res['freqs']
+                        freq.forEach(f => {
+                            const firstLink = Object.keys(f)[0]
+                            const freq = f[firstLink] 
+                            if (!linkSeen.includes(firstLink + freq)) {
+                                linkSeen.push(firstLink + freq);
+                                t.push([firstLink, f[firstLink], key]);
+                            }
+                        })
                     })
                     
-                    // Object.entries(linkFreq).forEach(([link, freq]) => {
-                    //     console.log("link: ", link)
-                    //     console.log('freq: ', freq)
-                    //     const terms = terms
-                    //     t.push([link, freq, terms]);
-                    // });
                     formattedReuslt = t
                 } else {
                     const t = new table({
@@ -176,17 +178,21 @@ async function search(searchTerms) {
                         colWidths: [80, 13], 
                         wordWrap: true
                     });
-                    // Object.entries(linksOnlySorted).forEach(([link, count]) => {
-                    //     t.push([link, count]);
-                    // });
-                    linkFreq.forEach((res) => {
-                        link = Object.keys(res)[0]
-                        console.log("link: ", link)
-                        freq = Object.values(res)[0]
-                        console.log("freq: ", freq)
-                        console.log("terms: ", terms)
-                        t.push([link, freq]);
+
+                    searchResult.forEach((res) => {
+                        let linkSeen = []
+                        let key = res['key']
+                        let freq = res['freqs']
+                        freq.forEach(f => {
+                            const firstLink = Object.keys(f)[0]
+                            const freq = f[firstLink] 
+                            if (!linkSeen.includes(firstLink + freq)) {
+                                linkSeen.push(firstLink + freq);
+                                t.push([firstLink, f[firstLink]]);
+                            }
+                        })
                     })
+                    
                     formattedReuslt = t
                 }
             }
