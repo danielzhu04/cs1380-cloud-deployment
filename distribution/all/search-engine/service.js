@@ -35,38 +35,96 @@ function search(config) {
         return stemmed; // return a list of stemmed words 
     }
     
-    function getHTTP(config, callback) {
+    function getHTTP(config, retries = 3) {
+      // const fullURL = config["URL"];
+      // const agent = new https.Agent({
+      //   rejectUnauthorized: false
+      // });
+
+      // return new Promise((resolve, reject) => {
+      //   const req = https.get(fullURL, { agent }, (res) => {
+      //     let data = '';
+    
+      //     res.on('data', chunk => {
+      //       data += chunk;
+      //     });
+    
+      //     res.on('end', () => {
+      //       data = convert(data)
+      //       data = data.normalize('NFKC');
+      //       data = data.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+      //       data = data.replace(/\\,/g, '\\');
+      //       resolve(data); // Return the plain text
+      //     });
+    
+      //     res.on('error', (err) => {
+      //       reject(err);
+      //     });
+      //   });
+    
+      //   req.on('error', (err) => {
+      //     reject(err);
+      //   });
+    
+      //   // req.setTimeout(10000, () => {
+      //   //   req.destroy(); // Clean up the request
+      //   //   reject(new Error('Request timeout'));
+      //   // });
+      // }); 
       const fullURL = config["URL"];
       const agent = new https.Agent({
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        keepAlive: true,       // Enable persistent connection reuse
+        maxSockets: 4,         // Limit the number of simultaneous sockets if needed
       });
 
       return new Promise((resolve, reject) => {
         const req = https.get(fullURL, { agent }, (res) => {
           let data = '';
-    
+
           res.on('data', chunk => {
             data += chunk;
           });
-    
+
           res.on('end', () => {
-            resolve(convert(data)); // Return the plain text
+            try {
+              // Convert HTML to plain text.
+              data = convert(data);
+              // Normalize Unicode to ensure consistency.
+              data = data.normalize('NFKC');
+              // Remove control characters that might break later JSON processing.
+              data = data.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+              // Fix any stray commas after a backslash.
+              data = data.replace(/\\,/g, '\\');
+              resolve(data);
+            } catch (conversionError) {
+              reject(conversionError);
+            }
           });
-    
+
           res.on('error', (err) => {
             reject(err);
           });
         });
-    
+
         req.on('error', (err) => {
           reject(err);
         });
-    
-        // req.setTimeout(10000, () => {
-        //   req.destroy(); // Clean up the request
-        //   reject(new Error('Request timeout'));
-        // });
-      }); 
+
+        req.setTimeout(10000, () => {
+          req.destroy();
+          reject(new Error('Request timeout'));
+        });
+      }).catch(err => {
+        // Retry on socket hang up errors (or other errors, as desired).
+        if (retries > 0 && err.message.includes("socket hang up")) {
+          console.log(`Retrying ${fullURL}. Retries left: ${retries} due to error: ${err.message}`);
+          // Wait 500ms before retrying (adjust delay if necessary)
+          return new Promise(resolve => setTimeout(resolve, 500))
+            .then(() => getHTTP(config, retries - 1));
+        }
+        return Promise.reject(err);
+      });
     }
 
     function setup(configuration, callback) {

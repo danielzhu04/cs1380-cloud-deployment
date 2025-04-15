@@ -209,10 +209,10 @@ function mr(config) {
                 if (counter == Object.keys(aggregates).length) {
                   // console.log("CALLING BACK, keyValuesObj is ", keyValuesObj);
                   if (Object.keys(keyValuesObj).length > 0) {
-                    console.log("CALLING BACK WITH KEYVALUESOBJ");
+                    console.error("CALLING BACK WITH KEYVALUESOBJ");
                     callback(null, keyValuesObj);
                   } else {
-                    console.log("CALLING BACK WITH NORMAL KEYVALUES");
+                    console.error("CALLING BACK WITH NORMAL KEYVALUES");
                     callback(null, keyValues);
                   }
                   // callback(null, keyValues);
@@ -242,7 +242,7 @@ function mr(config) {
     // Register temporary service endpoint on each node
     distribution[context.gid].routes.put(mrTempService, uniqueID, (e, v) => {
       if (Object.keys(e).length != 0) {
-        console.log("e is ", e);
+        console.error("e is ", e);
         cb(new Error('Cannot create temporary service endpoint'));
         return;
       }
@@ -324,11 +324,11 @@ function mr(config) {
                     Object.keys(nidsToNodes).forEach((nid) => {
                       const remote = {service: uniqueID, method: 'reduce', node: nidsToNodes[nid]};
                       const message = {gid: context.gid, reduce: configuration["reduce"], uniqueID: uniqueID};
-                      console.log("About to call reduce");
+                      console.error("About to call reduce");
                       distribution.local.comm.send([message], remote, (e, v) => {
-                        console.log("AFTER CALLING REDUCE USING LOCAL COMM");
-                        console.log("AFTER reduce, e is ", e);
-                        // console.log("AFTER reduce, v is ", v);
+                        console.error("AFTER CALLING REDUCE USING LOCAL COMM");
+                        console.error("AFTER reduce, e is ", e);
+                        // console.error("AFTER reduce, v is ", v);
                         if (e) {
                           cb(new Error("Error reducing with local comm"));
                           return;
@@ -339,7 +339,7 @@ function mr(config) {
                             retList = retList.concat(v);
                           }
                         } else {
-                          console.log("IN NON-ARRAY RETLIST REDUCE CHECK");
+                          console.error("IN NON-ARRAY RETLIST REDUCE CHECK");
                           Object.keys(v).forEach((key) => {
                             if (!(key in retObj)) {
                               retObj[key] = [];
@@ -348,7 +348,7 @@ function mr(config) {
                           })
                           // retList.push(v);
                         }
-                        console.log("after populating retlist or retobj");
+                        console.error("after populating retlist or retobj");
 
                         // NEXT STEPS: need to check if something is an object and if so, 
                         // somehow merge results together
@@ -363,7 +363,7 @@ function mr(config) {
                         if (numResponses == numNodes) {
                           // Done with all 3 phases, starting teardown
                           // NEED TO UPDATE OBJECT TRACKER
-                          console.log("sorting retobj");
+                          console.error("sorting retobj");
                           try {
                             if (Object.keys(retObj).length > 0 && Object.values(retObj)[0] instanceof Array) { 
                               Object.keys(retObj).forEach((term) => {
@@ -392,7 +392,7 @@ function mr(config) {
                           // } catch (error) {
                            
                           // }
-                          console.log("passed sorting phase, in cleanup phase");
+                          console.error("passed sorting phase, in cleanup phase");
 
                           let remNodeCount = 0; 
                           Object.keys(nodesTOCleanup).forEach(nk => {
@@ -403,7 +403,7 @@ function mr(config) {
                               remNodeCount += 1
                               
                               if (remNodeCount == Object.keys(nodesTOCleanup).length) {
-                                console.log("reached remnodecount");
+                                console.error("reached remnodecount");
                                 distribution[context.gid].mem.delAll((e, v) => {
                                   distribution[context.gid].routes.rem(mrTempService, uniqueID, (e1, v1) => {
                                     // NOTE: return object tracker if its key list is nonempty
@@ -416,9 +416,9 @@ function mr(config) {
                                     //   });
                                     //   // ("should be returning new retList");
                                     // } else {
-                                    //   // console.log("no need to change retlist");
+                                    //   // console.error("no need to change retlist");
                                     // }
-                                    console.log("about to return entirely");
+                                    console.error("about to return entirely");
                                     if (Object.keys(retObj).length > 0) {
                                       // console.log("returning retobj, retobj is ", retObj);
                                       cb(null, retObj);
@@ -428,7 +428,7 @@ function mr(config) {
                                       cb(null, retList);
                                       return;
                                     }
-                                    console.log("******ABOUT TO CALL BACK FROM MR");
+                                    console.error("******ABOUT TO CALL BACK FROM MR");
                                     // cb(null, retList);
                                     return;
                                   });

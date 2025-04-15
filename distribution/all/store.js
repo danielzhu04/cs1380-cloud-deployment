@@ -57,6 +57,9 @@ function store(config) {
         local.comm.send([state, {key: key, gid: context.gid}], 
           {node: nodeToStore, service: 'store', method: 'put'}, (e, v) => {
             // console.log('successfully sent in mem, ', e, v)
+            if (e) {
+              console.log("ERROR IN DISTRIBUTED PUT: ", e)
+            }
             callback(e, v); 
           })
     })

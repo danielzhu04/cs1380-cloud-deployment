@@ -146,13 +146,16 @@ function processBatch(batch, cb) {
       distribution[gid].store.put(value, key, (e, v) => {
         cntr++;
         if (e) {
+          console.log("ERROR ON PROCESS BATCH", e)
           return cb(e);
         }
         // When all URLs in the batch have been processed:
         if (cntr === batch.length) {
           // Now setup the server for this batch:
+          console.log("BEFORE SETUP SERVICE CALL")
           setUpServer(batchKeys, (e, v) => {
             if (e) {
+              console.log("ERROR ON SETUP SERVER: ", e)
               return cb(e);
             }
             cb(null, v);
@@ -172,7 +175,9 @@ function processAllBatches(finalCallback) {
     processBatch(batch, (err, result) => {
       if (err) return finalCallback(err);
       // After processing this batch, process the next one recursively.
-      processAllBatches(finalCallback);
+      setTimeout(() => {
+        processAllBatches(finalCallback);
+      }, 500); // 500 ms delay – adjust as needed
     });
 }
 

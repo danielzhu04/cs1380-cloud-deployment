@@ -9,7 +9,7 @@ global.nodeConfig = global.nodeConfig || {
   ip: '127.0.0.1',
   port: 1234,
   onStart: () => {
-    console.log(`Node started!`);
+    console.error(`Node started!`);
   },
 };
 
