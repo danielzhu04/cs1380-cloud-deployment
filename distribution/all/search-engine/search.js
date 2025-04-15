@@ -101,8 +101,8 @@ async function search(searchTerms) {
             return null;  
         } else {
             let searchResult = v
-            SE_LOG("RESULTS: ", searchResult)
-            SE_LOG("Querying Success! Formatting and returning Results.")
+            // SE_LOG("RESULTS: ", searchResult)
+            // SE_LOG("Querying Success! Formatting and returning Results.")
 
             // Format search result into table format.  
             let formattedReuslt = ""
@@ -111,7 +111,6 @@ async function search(searchTerms) {
                 || searchResult.length == 0) {
                 formattedReuslt = "No matching pages found..."
             } else {
-                console.log('ENTERRRRR')
                 const terms = Object.keys(searchResult)[0] // word 
                 const linkFreq = searchResult[terms] // link1 3 link2 6
 

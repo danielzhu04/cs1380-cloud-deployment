@@ -66,7 +66,7 @@ const start = function(callback) {
         routes.get(config, (error, service) => {
             if (error) {
               errToRet = new Error(`Cannot retrieve service: ${error}`);
-              console.log("ERROR RETRIEVING SERVICE IN NODE: ", errToRet)
+              // console.log("ERROR RETRIEVING SERVICE IN NODE: ", errToRet)
               res.end(serialize(errToRet));
               return;
             }
@@ -76,7 +76,7 @@ const start = function(callback) {
             const args = deserialize(fullBody);
             // console.log("IN NODE.JS, DESERIALIZED ARGS ARE ", args);
             serviceFunc(...args, (error, returnedVal) => {
-              console.log("error IN NODE is ", error);
+              // console.log("error IN NODE is ", error);
               // console.log("returned value is ", returnedVal);
               // if (Array.isArray(returnedVal)) {
               //   returnedVal.forEach((listItem) => {
@@ -86,7 +86,7 @@ const start = function(callback) {
               // }
               if (gid == 'local' && error) {
                 errToRet = new Error(`Cannot execute service method: ${error}`);
-                console.log("ERROR RETRIEVING SERVICE IN NODE 2: ", errToRet)
+                // console.log("ERROR RETRIEVING SERVICE IN NODE 2: ", errToRet)
                 res.end(serialize(errToRet));
               } else if (gid != 'local') {
                 // console.log("IN NON LOCAL");

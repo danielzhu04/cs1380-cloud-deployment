@@ -97,7 +97,7 @@ function setUpURLs(dataPath, cb) {
 
 function setUpServer(batchKeys, cb) {
     const config = { gid: gid, datasetKeys: batchKeys };
-    SE_LOG("SETUP SERVER CALLED w/ config:", config.gid, config.datasetKeys);
+    // SE_LOG("SETUP SERVER CALLED w/ config:", config.gid, config.datasetKeys);
     distribution[gid].search.setup(config, (e, v) => {
         // Maybe do updating index here (might need to change mr)
         // distribution.local.store.get(searchdb) <-- get object of terms: [{}]
@@ -106,7 +106,6 @@ function setUpServer(batchKeys, cb) {
         distribution.local.store.get("searchdb", (e, v) => {
             // note to self: must delete old searchdb file before running program
             if (!e) { // have a searchdb file
-                console.log("have a search db file already");
                 Object.keys(v).forEach((key) => {
                     if (!(key in newdb)) {
                         newdb[key] = [];
@@ -121,17 +120,11 @@ function setUpServer(batchKeys, cb) {
                     });
                     newdb[term] = newdb[term].slice(0, kURLs);
                 });
-            } 
-            // else {
-            //     console.log('error getting searchdb, ', e);
-            // }
+            }
             distribution.local.store.put(newdb, 'searchdb', (e, v) => {
                 cb(e, v);
             });
         });
-        // distribution.local.store.put(v, 'searchdb', (e, v) => {
-        //     cb(e, v);
-        // });
     });
 }
 
@@ -148,16 +141,13 @@ function processBatch(batch, cb) {
       distribution[gid].store.put(value, key, (e, v) => {
         cntr++;
         if (e) {
-          console.log("ERROR ON PROCESS BATCH", e)
           return cb(e);
         }
         // When all URLs in the batch have been processed:
         if (cntr === batch.length) {
           // Now setup the server for this batch:
-          console.log("BEFORE SETUP SERVICE CALL")
           setUpServer(batchKeys, (e, v) => {
             if (e) {
-              console.log("ERROR ON SETUP SERVER: ", e)
               return cb(e);
             }
             cb(null, v);
@@ -219,7 +209,6 @@ function processAllBatches(finalCallback) {
 function searchKeyTerm(searchTerms, cb) {
     const config = {gid: gid, terms: searchTerms}
     distribution[gid].search.query(config, (e,v) => {
-        // console.log("Returning from query service, ", e, v)
         if (v) {
             cb(null, v)
             return; 

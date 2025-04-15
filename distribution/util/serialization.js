@@ -62,7 +62,7 @@ function deserialize(string) {
     parsedJson = JSON.parse(str);
   } catch (error) {
     // console.log(string.toString('utf8').substring(392200, 392253));
-    console.log("ERROR IN DESERIALIZE, ERROR IS ", error);
+    // console.log("ERROR IN DESERIALIZE, ERROR IS ", error);
     return `Could not parse input JSON: ${error}`;
   }
   if (parsedJson.type == "number" || parsedJson.type == "string" || parsedJson.type == "boolean" || parsedJson.type == "null" || parsedJson.type == "unknown") {

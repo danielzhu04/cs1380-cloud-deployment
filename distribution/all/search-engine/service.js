@@ -20,7 +20,6 @@ function search(config) {
             return new Error("Non-string HTML contents");
         }
         const words = html.trim().split(/\s+/);
-        // console.error("words is ", words);
         stemmed = [];
         words.forEach(word => {
           const stemmedWord = natural.PorterStemmer.stem(word.replace(/[^a-zA-Z0-9]/g, ''));
@@ -138,7 +137,6 @@ function search(config) {
 
           // Store the fetched text with key = original incomplete URL
           const plainText = await distribution[gid].search.getHTTP({ URL: fullURL });
-          // console.error("GOT TEXT FROM: ", fullURL, "PUTTING CONTENT IN NODE (MAP STAGE)")
           const mapperResult = await new Promise((resolve, reject) => {
             store.put(plainText, key, (err) => {
               if (err) {
@@ -161,7 +159,6 @@ function search(config) {
           values.forEach((html) => {
               const terms = distribution[gid].search.stemHTML(html);
               if (terms instanceof Error) {
-                // console.error("TERMS RETURNED AN ERROR");
                 return terms;
               }
               
@@ -181,16 +178,16 @@ function search(config) {
           // Then modify mr reducer as well to handle object outputs instead of map outputs 
           return termsToUrls;
 
-          const toReturn = [];
-          Object.keys(termsToUrls).forEach((term) => {
-              const tempList = [termsToUrls[term]];
-              toReturn.push({[term]: tempList});
-          });
+          // const toReturn = [];
+          // Object.keys(termsToUrls).forEach((term) => {
+          //     const tempList = [termsToUrls[term]];
+          //     toReturn.push({[term]: tempList});
+          // });
           
-          // console.error("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
-          // NOTE TO SELF: check if there is a current searchdb and if there is, append the results to that 
-          console.error("ToReturn is ", toReturn);
-          return toReturn;
+          // // console.error("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
+          // // NOTE TO SELF: check if there is a current searchdb and if there is, append the results to that 
+          // console.error("ToReturn is ", toReturn);
+          // return toReturn;
         };  
 
         const datasetKeys = configuration.datasetKeys
