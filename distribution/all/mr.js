@@ -59,6 +59,7 @@ function mr(config) {
     const mrTempService = {};
     // Establish methods map, shuffle, and reduce
     function map(config, callback) {
+      const start = performance.now();
       if (typeof callback != 'function' || !(callback instanceof Function)) {
         callback = function() {};
       }
@@ -93,15 +94,24 @@ function mr(config) {
       // Wait for all promises to resolve.
       Promise.all(promises)
         .then(() => {
+          const end = performance.now();
+          const keys = config["keys"];
           distribution.local.store.put(nidValues[nid], uniqueID, (e, v) => {
             if (e) {
               callback(new Error("Cannot put map results into local store"));
               return;
             }
+            // console.log(`[MR-TIMING] map-phase latency: ${(end - start).toFixed(2)} ms`);
+            console.log(`[MR-TIMING] crawler-phase average latency per URL: ${((end - start) / keys.length).toFixed(2)} ms`);
+            console.log(`[MR-TIMING] crawler-phase throughput: ${(keys.length / ((end - start) / 1000)).toFixed(2)} keys/sec`);
             callback(null, nidValues);
           });
         })
-        .catch(callback);
+        .catch(err => {
+          const end = performance.now();
+          console.log(`[MR-TIMING] map-phase failed after ${(end - start).toFixed(2)} ms`);
+          callback(err);
+        });
     }
 
     function shuffle(config, callback) {
@@ -154,7 +164,7 @@ function mr(config) {
       if (typeof callback != 'function' || !(callback instanceof Function)) {
         callback = function() {};
       }
-
+      const start = performance.now();
       const gid = config["gid"];
       const aggregates = {};
       let keyValues = []; // Format is [{key: value}, ...]
@@ -208,6 +218,10 @@ function mr(config) {
                 counter += 1;
                 if (counter == Object.keys(aggregates).length) {
                   // console.log("CALLING BACK, keyValuesObj is ", keyValuesObj);
+                  const end = performance.now();
+                  // console.log(`[MR-TIMING] reduce-phase latency: ${(end - start).toFixed(2)} ms`);
+                  console.log(`[MR-TIMING] index-phase average latency per URL: ${((end - start) / Object.keys(aggregates).length).toFixed(2)} ms`);
+                  console.log(`[MR-TIMING] index-phase throughput: ${(Object.keys(aggregates).length / ((end - start) / 1000)).toFixed(2)} keys/sec`);
                   if (Object.keys(keyValuesObj).length > 0) {
                     // console.error("CALLING BACK WITH KEYVALUESOBJ");
                     callback(null, keyValuesObj);
