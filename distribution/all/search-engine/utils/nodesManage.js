@@ -226,5 +226,6 @@ module.exports = {
     // shardURLs: shardURLs, 
     processAllBatches: processAllBatches,
     setUpServer: setUpServer,
-    searchKeyTerm: searchKeyTerm 
+    searchKeyTerm: searchKeyTerm,
+    batchSize: batchSize
 }

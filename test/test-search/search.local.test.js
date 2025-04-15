@@ -89,7 +89,7 @@ test('crawler and indexer 1: 1 book', (done) => {
   });
 });
 
-test.only('crawler and indexer 2: 4 books', (done) => {
+test('crawler and indexer 2: 4 books', (done) => {
   const dataKeys = setUpURLs('../../distribution/all/search-engine/data/test2.txt');
 
   shardURLs("myGroup", (e, v) => {

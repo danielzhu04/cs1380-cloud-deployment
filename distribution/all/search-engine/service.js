@@ -202,7 +202,7 @@ function search(config) {
           const end = performance.now();
           try {
             // console.log("about to log to mrPath: ", mrPath);
-            fs.appendFileSync(mrPath, `mr-phase latency (ms/mr operation): ${end - start}\n`);
+            fs.appendFileSync(mrPath, `MapReduce latency (ms/mr operation): ${end - start}\n`);
           } catch (error) {
             // console.log("ERROR WRITING FILE ", error);
           }
@@ -265,8 +265,8 @@ function search(config) {
         // console.log('In QUERY, getting values of searchdb', v, "e: ", e)
         if (v) {
           const end = performance.now();
-          console.log(`[QUERY-TIMING] query latency: ${(end - start).toFixed(2)} ms`);
-          console.log(`[QUERY-TIMING] query throughput: ${(1/ ((end - start) / 1000)).toFixed(2)} queries/sec`);
+          console.log(`Querier latency (ms/query): ${(end - start).toFixed(2)}`);
+          console.log(`Querier throughput (queries/sec): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
           let results = findMatchingInIndex(v, configuration.terms)
           // console.log("RESULT FOUND: ", results)
 

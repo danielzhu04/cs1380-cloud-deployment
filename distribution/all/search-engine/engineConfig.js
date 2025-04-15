@@ -20,7 +20,7 @@ const stemWords = (line) => {
 function setUpConfig() {
     console.log(`Initializing search engine configs ...`)
     const config = {
-        searchEngineName: "XXX", 
+        searchEngineName: "GutenSearch", 
         localServer: null, 
         searchGroupConfig: searchGroupConfig, 
         workerNodes: workerNodes, 
