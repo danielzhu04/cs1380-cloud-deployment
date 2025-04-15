@@ -2,6 +2,7 @@ const distribution = require('../../../config.js');
 const log = require('./utils/log');
 
 const fs = require('fs')
+const path = require('path')
 const SE_ERROR = log.ERROR
 const SE_LOG = log.LOG
 
@@ -10,10 +11,15 @@ const https = require('https');
 const {convert} = require('html-to-text');
 const natural = require('natural');
 
+const mrPath = path.resolve(__dirname, `../../../performance/search-engine/m6.mrPerformance.txt`);
+
 function search(config) {
     const context = {};
     context.gid = config.gid || 'all';
     context.hash = config.hash || global.distribution.util.id.naiveHash;
+
+    // For M6 performance
+    // const mrPath = path.resolve(perfDir, "/m6.mrPerformance.js");
 
     function stemHTML(html) {
         if (typeof html != "string") {
@@ -138,13 +144,13 @@ function search(config) {
           // Store the fetched text with key = original incomplete URL
           const plainText = await distribution[gid].search.getHTTP({ URL: fullURL });
           const mapperResult = await new Promise((resolve, reject) => {
-            store.put(plainText, key, (err) => {
-              if (err) {
-                return reject(err);
-              }
+            // store.put(plainText, key, (err) => {
+            //   if (err) {
+            //     return reject(err);
+            //   }
               // Pass the desired output through resolve so that mapperResult gets set properly.
               resolve([{ [fullURL]: plainText }]);
-            });
+            // });
           });
           
           return mapperResult;
@@ -191,7 +197,16 @@ function search(config) {
         };  
 
         const datasetKeys = configuration.datasetKeys
+        const start = performance.now();
         distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
+          const end = performance.now();
+          try {
+            // console.log("about to log to mrPath: ", mrPath);
+            fs.appendFileSync(mrPath, `mr-phase latency (ms/mr operation): ${end - start}\n`);
+          } catch (error) {
+            // console.log("ERROR WRITING FILE ", error);
+          }
+
           // console.error("AFTER RUNNING MR EXEC");
           // console.error("E IS ", e);
           // console.error("V IS ", v);

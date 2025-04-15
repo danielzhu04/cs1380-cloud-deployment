@@ -2,6 +2,7 @@
 const id = distribution.util.id;
 
 const fs = require('fs');
+// console.log('fs loaded:', typeof fs.writeFileSync);
 const path = require('path');
 const https = require('https');
 
@@ -35,6 +36,9 @@ const https = require('https');
   installed on the remote nodes and not necessarily exposed to the user.
 */
 
+// const crawlerPath = path.resolve(__dirname, `../../performance/search-engine/m6.crawlerPerformance.txt`);
+// const indexerPath = path.resolve(__dirname, `../../performance/search-engine/m6.indexerPerformance.txt`);
+
 function generateStr(strLen) {
   let str = '';
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -59,6 +63,11 @@ function mr(config) {
     const mrTempService = {};
     // Establish methods map, shuffle, and reduce
     function map(config, callback) {
+      // const fsFunc = config["fsFunc"];
+      // const crawlerPath = config["crawlerPath"];
+      // const pathResFunc = config["pathResFunc"];
+      // console.log("fs func is ", fsFunc);
+      // console.log("crawlerpath is ", crawlerPath);
       const start = performance.now();
       if (typeof callback != 'function' || !(callback instanceof Function)) {
         callback = function() {};
@@ -94,6 +103,7 @@ function mr(config) {
       // Wait for all promises to resolve.
       Promise.all(promises)
         .then(() => {
+          // console.log("fs func is ", fsFunc);
           const end = performance.now();
           const keys = config["keys"];
           distribution.local.store.put(nidValues[nid], uniqueID, (e, v) => {
@@ -101,9 +111,8 @@ function mr(config) {
               callback(new Error("Cannot put map results into local store"));
               return;
             }
-            // console.log(`[MR-TIMING] map-phase latency: ${(end - start).toFixed(2)} ms`);
-            console.log(`[MR-TIMING] crawler-phase average latency per URL: ${((end - start) / keys.length).toFixed(2)} ms`);
-            console.log(`[MR-TIMING] crawler-phase throughput: ${(keys.length / ((end - start) / 1000)).toFixed(2)} keys/sec`);
+            console.log(`Crawler phase average latency (URL/ms): ${((end - start) / keys.length).toFixed(2)}`);
+            console.log(`Crawler phase throughput (keys/sec): ${(keys.length / ((end - start) / 1000)).toFixed(2)}`);
             callback(null, nidValues);
           });
         })
@@ -220,8 +229,8 @@ function mr(config) {
                   // console.log("CALLING BACK, keyValuesObj is ", keyValuesObj);
                   const end = performance.now();
                   // console.log(`[MR-TIMING] reduce-phase latency: ${(end - start).toFixed(2)} ms`);
-                  console.log(`[MR-TIMING] index-phase average latency per URL: ${((end - start) / Object.keys(aggregates).length).toFixed(2)} ms`);
-                  console.log(`[MR-TIMING] index-phase throughput: ${(Object.keys(aggregates).length / ((end - start) / 1000)).toFixed(2)} keys/sec`);
+                  // console.log(`Indexer phase average latency (ms / URL): ${((end - start) / Object.keys(aggregates).length).toFixed(2)}`);
+                  // console.log(`Indexer phase throughput (keys/sec): ${(Object.keys(aggregates).length / ((end - start) / 1000)).toFixed(2)}`);
                   if (Object.keys(keyValuesObj).length > 0) {
                     // console.error("CALLING BACK WITH KEYVALUESOBJ");
                     callback(null, keyValuesObj);
@@ -294,7 +303,7 @@ function mr(config) {
         Object.keys(nidsToKeys).forEach((nid) => { // Each iteration corresponds to a new node
           const keyList = nidsToKeys[nid];
           const remote = {service: uniqueID, method: 'map', node: nidsToNodes[nid]};
-          const message = {gid: context.gid, nid: nid, keys: keyList, map: configuration["map"], uniqueID: uniqueID};
+          const message = {gid: context.gid, nid: nid, keys: keyList, map: configuration["map"], uniqueID: uniqueID}; // fsFunc: fs.writeFileSync, crawlerPath: path.resolve(__dirname, `../../performance/search-engine/m6.crawlerPerformance.txt`), uniqueID: uniqueID};
           distribution.local.comm.send([message], remote, (e, v) => {
             if (e) {
               cb(new Error("Error mapping with local comm"));
