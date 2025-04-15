@@ -35,41 +35,6 @@ function search(config) {
     }
     
     function getHTTP(config, retries = 3) {
-      // const fullURL = config["URL"];
-      // const agent = new https.Agent({
-      //   rejectUnauthorized: false
-      // });
-
-      // return new Promise((resolve, reject) => {
-      //   const req = https.get(fullURL, { agent }, (res) => {
-      //     let data = '';
-    
-      //     res.on('data', chunk => {
-      //       data += chunk;
-      //     });
-    
-      //     res.on('end', () => {
-      //       data = convert(data)
-      //       data = data.normalize('NFKC');
-      //       data = data.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
-      //       data = data.replace(/\\,/g, '\\');
-      //       resolve(data); // Return the plain text
-      //     });
-    
-      //     res.on('error', (err) => {
-      //       reject(err);
-      //     });
-      //   });
-    
-      //   req.on('error', (err) => {
-      //     reject(err);
-      //   });
-    
-      //   // req.setTimeout(10000, () => {
-      //   //   req.destroy(); // Clean up the request
-      //   //   reject(new Error('Request timeout'));
-      //   // });
-      // }); 
       const fullURL = config["URL"];
       const agent = new https.Agent({
         rejectUnauthorized: false,
@@ -138,13 +103,13 @@ function search(config) {
           // Store the fetched text with key = original incomplete URL
           const plainText = await distribution[gid].search.getHTTP({ URL: fullURL });
           const mapperResult = await new Promise((resolve, reject) => {
-            store.put(plainText, key, (err) => {
-              if (err) {
-                return reject(err);
-              }
+            // store.put(plainText, key, (err) => {
+            //   if (err) {
+            //     return reject(err);
+            //   }
               // Pass the desired output through resolve so that mapperResult gets set properly.
-              resolve([{ [fullURL]: plainText }]);
-            });
+            resolve([{ [fullURL]: plainText }]);
+            // });
           });
           
           return mapperResult;

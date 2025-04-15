@@ -248,25 +248,21 @@ function manageQueryBooks() {
     nodesManager.setUpNodes((e, v) => {
         if (!e) {
             localServer = v 
+            mergeInterval = setInterval(() => {
+                nodesManager.mergeQueueIntoSearchDB((err, msg) => {
+                  if (err) {
+                    console.error("Error merging queue data:", err);
+                  } else {
+                    // console.log(msg);
+                  }
+                });
+              }, 500); // merge is called every 500ms
+
+            
             let path = '../data/books.txt'
             nodesManager.setUpURLs(path, (e, v) => {
                 const urlCount = v
                 if (!e) {
-                    // nodesManager.shardURLs((e, v) => {
-                    //     if (!e) {
-                    //         console.error(`Sharded ${urlCount} URL for '${selectedType}' into worker nodes of ${searchEngineName}`) 
-                    //         nodesManager.setUpServer((e, v) => {
-                    //             if (!e) {
-                    //                 SE_FLOG(`Setup Seach Engine Server 🚀`) 
-                    //                 SE_FLOG(`${searchEngineName} is ready!!`)  
-                    //             }
-                    //         });
-                    //     } else {
-                    //         SE_ERROR(`Fail to shard intial URL keys for ${searchEngineName}: ${e}`) 
-                    //         onExit(); 
-                    //     }
-                    // })
-                    // maybe first get rid of residual searchdb here?
                     nodesManager.processAllBatches((err, result) => {
                         if (err) {
                           SE_ERROR(`Failed to process URL batches for ${searchEngineName}: ${err}`);
