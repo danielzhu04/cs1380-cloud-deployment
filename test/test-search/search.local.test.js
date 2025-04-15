@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const id = distribution.util.id;
 
-jest.setTimeout(5000);
+jest.setTimeout(10000);
 
 const myGroup = {};
 
@@ -59,25 +59,110 @@ function shardURLs(gid, cb) {
   });
 }
 
-test('mock indexer', (done) => {
-  const dataKeys = setUpURLs('../../distribution/all/search-engine/data/books.txt');
+test('crawler and indexer 1: 1 book', (done) => {
+  const dataKeys = setUpURLs('../../distribution/all/search-engine/data/test1.txt');
 
   shardURLs("myGroup", (e, v) => {
-    distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
-      const searchResults = v;
-      console.log("done with search setup, e is ", e);
-      console.log("V is ", v);
-      distribution.local.store.put(searchResults, "searchdb", (e, v) => {
-        console.log("v is ", v);
-        distribution.local.store.get("searchdb", (e, v) => {
-          console.log('v is ', v);
-          try {
-            // expect(v.length).toBe(searchResults.length);
-            expect(Object.keys(v)).toEqual(expect.arrayContaining(Object.keys(searchResults)));
-            done();
-          } catch (e) {
-            done(e);
-          }
+    distribution.local.store.del("searchdb", (e, v) => {
+      distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
+        const searchResults = v;
+        distribution.local.store.put(searchResults, "searchdb", (e, v) => {
+          distribution.local.store.get("searchdb", (e, v) => {
+            try {
+              expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        });
+      });
+    });
+  });
+});
+
+test('crawler and indexer 2: 4 books', (done) => {
+  const dataKeys = setUpURLs('../../distribution/all/search-engine/data/test2.txt');
+
+  shardURLs("myGroup", (e, v) => {
+    distribution.local.store.del("searchdb", (e, v) => {
+      distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
+        const searchResults = v;
+        distribution.local.store.put(searchResults, "searchdb", (e, v) => {
+          distribution.local.store.get("searchdb", (e, v) => {
+            try {
+              expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        });
+      });
+    });
+  });
+});
+
+test('crawler and indexer 3: 10 books', (done) => {
+  const dataKeys = setUpURLs('../../distribution/all/search-engine/data/test3.txt');
+
+  shardURLs("myGroup", (e, v) => {
+    distribution.local.store.del("searchdb", (e, v) => {
+      distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
+        const searchResults = v;
+        distribution.local.store.put(searchResults, "searchdb", (e, v) => {
+          distribution.local.store.get("searchdb", (e, v) => {
+            try {
+              expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        });
+      });
+    });
+  });
+});
+
+test('crawler and indexer 4: 25 books', (done) => {
+  const dataKeys = setUpURLs('../../distribution/all/search-engine/data/test4.txt');
+
+  shardURLs("myGroup", (e, v) => {
+    distribution.local.store.del("searchdb", (e, v) => {
+      distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
+        const searchResults = v;
+        distribution.local.store.put(searchResults, "searchdb", (e, v) => {
+          distribution.local.store.get("searchdb", (e, v) => {
+            try {
+              expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        });
+      });
+    });
+  });
+});
+
+test('crawler and indexer 5: 50 books', (done) => {
+  const dataKeys = setUpURLs('../../distribution/all/search-engine/data/test5.txt');
+
+  shardURLs("myGroup", (e, v) => {
+    distribution.local.store.del("searchdb", (e, v) => {
+      distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
+        const searchResults = v;
+        distribution.local.store.put(searchResults, "searchdb", (e, v) => {
+          distribution.local.store.get("searchdb", (e, v) => {
+            try {
+              expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
         });
       });
     });

@@ -267,6 +267,7 @@ function manageQueryBooks() {
                     //         onExit(); 
                     //     }
                     // })
+                    // maybe first get rid of residual searchdb here?
                     nodesManager.processAllBatches((err, result) => {
                         if (err) {
                           SE_ERROR(`Failed to process URL batches for ${searchEngineName}: ${err}`);

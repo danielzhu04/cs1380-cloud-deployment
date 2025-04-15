@@ -161,7 +161,7 @@ function search(config) {
           values.forEach((html) => {
               const terms = distribution[gid].search.stemHTML(html);
               if (terms instanceof Error) {
-                console.error("TERMS RETURNED AN ERROR");
+                // console.error("TERMS RETURNED AN ERROR");
                 return terms;
               }
               
@@ -176,7 +176,7 @@ function search(config) {
               })
           });
 
-          console.error("AFTER POPULATING TERMSTOURLS");
+          // console.error("AFTER POPULATING TERMSTOURLS");
           // console.error("Terms to urls is ", termsToUrls); // return terms to URLs
           // Then modify mr reducer as well to handle object outputs instead of map outputs 
           return termsToUrls;
@@ -195,8 +195,8 @@ function search(config) {
 
         const datasetKeys = configuration.datasetKeys
         distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
-          console.error("AFTER RUNNING MR EXEC");
-          console.error("E IS ", e);
+          // console.error("AFTER RUNNING MR EXEC");
+          // console.error("E IS ", e);
           // console.error("V IS ", v);
           // v.forEach((currObj) => {
           //   console.error("The current object is ", currObj);

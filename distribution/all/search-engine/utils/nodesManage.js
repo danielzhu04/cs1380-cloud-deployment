@@ -14,6 +14,7 @@ const n1 = engineConfig.workerNodes.n1
 const n2 = engineConfig.workerNodes.n2
 const n3 = engineConfig.workerNodes.n3
 const batchSize = 4;
+const kURLs = 10;
 
 function addNodesToGroup() {
     searchGroup[id.getSID(n1)] = n1;
@@ -118,6 +119,7 @@ function setUpServer(batchKeys, cb) {
                     newdb[term].sort((x, y) => {
                         return Object.values(y)[0] - Object.values(x)[0];
                     });
+                    newdb[term] = newdb[term].slice(0, kURLs);
                 });
             } 
             // else {
