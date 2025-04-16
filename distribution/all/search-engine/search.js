@@ -101,8 +101,6 @@ async function search(searchTerms) {
             return null;  
         } else {
             let searchResult = v
-            // SE_LOG("RESULTS: ", searchResult)
-            // SE_LOG("Querying Success! Formatting and returning Results.")
 
             // Format search result into table format.  
             let formattedReuslt = ""
@@ -112,40 +110,6 @@ async function search(searchTerms) {
                 formattedReuslt = "No matching pages found..."
             } else {
                 const terms = Object.keys(searchResult)[0] // word 
-                const linkFreq = searchResult[terms] // link1 3 link2 6
-
-                // let linkToTerms = {} // Build map from link to the index term they were found. 
-                // let linkToFreq = {} // Build map from link to the freq this link was found.  
-
-                // // Go through each returned matching results, and parse through 
-                // // the global index entries. 
-                // searchResult.forEach((res) => {
-                //     const terms = Object.keys(res) // word 
-                //     console.log("terms: ", terms)
-                //     const linkFreq = Object.values(res) // link1 3 link2 6
-                //     console.log("values: ", linkFreq)
-                //     const httpRegex = /(https?:\/\/[^\s]+)\s(\d+)/g;
-                //     while ((lf = httpRegex.exec(linkFreq)) !== null) {
-                //         const link = lf[1].trim() // link1 
-                //         const freq = lf[2].trim() // 3 
-                //         if (!(link in linkToFreq)) {
-                //             linkToFreq[link] = 0
-                //         }
-                //         if (!(link in linkToTerms)) {
-                //             linkToTerms[link] = []
-                //         }
-                //         linkToFreq[link] += Number(freq)
-                //         linkToTerms[link].push(terms)
-                //     }
-                // })
-
-                // // Sort {links: freq} by most frequent and push links into 
-                // // links only array for no metadata result. 
-                // let linksOnlySorted = {};
-                // const linksSorted = Object.entries(linkToFreq).sort((a, b) => b[1] - a[1]);
-                // linksSorted.forEach((linkFreq) => {
-                //     linksOnlySorted[linkFreq[0]] = linkFreq[1] 
-                // })
 
                 // Format querying results based on if the user chose metadata 
                 // or just with links rankd in frequnecy first. 
@@ -271,8 +235,14 @@ function manageQueryBooks() {
                           SE_ERROR(`Failed to process URL batches for ${searchEngineName}: ${err}`);
                           onExit();
                         } else {
-                          SE_FLOG(`All batches processed. Setting up Search Engine Server 🚀`);
-                          SE_FLOG(`${searchEngineName} is ready!!`);
+                          console.error(`All batches processed. Setting up Search Engine Server 🚀`);
+                          console.error(`${searchEngineName} is ready!!`);
+                          console.error("Crawler latency (ms/URL): ", (log.elapsed.crawlTime / log.elapsed.numCrawled).toFixed(2));
+                          console.error("Crawler throughput (URLs/s): ", (log.elapsed.numCrawled /(log.elapsed.crawlTime / 1000)).toFixed(2));
+                          console.error("Indexer latency (ms/URL): ", (log.elapsed.indexTime / log.elapsed.numIndexed).toFixed(2));
+                          console.error("Indexer throughput (URLs/s): ", (log.elapsed.numIndexed /(log.elapsed.indexTime / 1000)).toFixed(2));
+                          console.error("MR latency (ms/MR operation): ", (log.elapsed.mrTime / log.elapsed.numMr).toFixed(2));
+                          console.error("MR throughput (MR operations/s): ", (log.elapsed.numMr /(log.elapsed.mrTime / 1000)).toFixed(2));
                         }
                     });
                 } else {

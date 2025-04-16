@@ -1,5 +1,6 @@
 /** @typedef {import("../types").Callback} Callback */
 const id = distribution.util.id;
+const log = require('./search-engine/utils/log');
 
 const fs = require('fs');
 const path = require('path');
@@ -94,6 +95,7 @@ function mr(config) {
       // Wait for all promises to resolve.
       Promise.all(promises)
         .then(() => {
+          // console.log("fs func is ", fsFunc);
           const end = performance.now();
           const keys = config["keys"];
           distribution.local.store.put(nidValues[nid], uniqueID, (e, v) => {
@@ -101,9 +103,6 @@ function mr(config) {
               callback(new Error("Cannot put map results into local store"));
               return;
             }
-            // console.log(`[MR-TIMING] map-phase latency: ${(end - start).toFixed(2)} ms`);
-            console.log(`[MR-TIMING] crawler-phase average latency per URL: ${((end - start) / keys.length).toFixed(2)} ms`);
-            console.log(`[MR-TIMING] crawler-phase throughput: ${(keys.length / ((end - start) / 1000)).toFixed(2)} keys/sec`);
             callback(null, nidValues);
           });
         })
@@ -217,19 +216,11 @@ function mr(config) {
 
                 counter += 1;
                 if (counter == Object.keys(aggregates).length) {
-                  // console.log("CALLING BACK, keyValuesObj is ", keyValuesObj);
-                  const end = performance.now();
-                  // console.log(`[MR-TIMING] reduce-phase latency: ${(end - start).toFixed(2)} ms`);
-                  console.log(`[MR-TIMING] index-phase average latency per URL: ${((end - start) / Object.keys(aggregates).length).toFixed(2)} ms`);
-                  console.log(`[MR-TIMING] index-phase throughput: ${(Object.keys(aggregates).length / ((end - start) / 1000)).toFixed(2)} keys/sec`);
                   if (Object.keys(keyValuesObj).length > 0) {
-                    // console.error("CALLING BACK WITH KEYVALUESOBJ");
                     callback(null, keyValuesObj);
                   } else {
-                    // console.error("CALLING BACK WITH NORMAL KEYVALUES");
                     callback(null, keyValues);
                   }
-                  // callback(null, keyValues);
                   return;
                 }
               });
@@ -256,7 +247,6 @@ function mr(config) {
     // Register temporary service endpoint on each node
     distribution[context.gid].routes.put(mrTempService, uniqueID, (e, v) => {
       if (Object.keys(e).length != 0) {
-        // console.error("e is ", e);
         cb(new Error('Cannot create temporary service endpoint'));
         return;
       }
@@ -294,13 +284,17 @@ function mr(config) {
         Object.keys(nidsToKeys).forEach((nid) => { // Each iteration corresponds to a new node
           const keyList = nidsToKeys[nid];
           const remote = {service: uniqueID, method: 'map', node: nidsToNodes[nid]};
-          const message = {gid: context.gid, nid: nid, keys: keyList, map: configuration["map"], uniqueID: uniqueID};
+          const message = {gid: context.gid, nid: nid, keys: keyList, map: configuration["map"], uniqueID: uniqueID}; // fsFunc: fs.writeFileSync, crawlerPath: path.resolve(__dirname, `../../performance/search-engine/m6.crawlerPerformance.txt`), uniqueID: uniqueID};
+          const mStart = performance.now();
           distribution.local.comm.send([message], remote, (e, v) => {
             if (e) {
               cb(new Error("Error mapping with local comm"));
               return;
             }
-
+            const mEnd = performance.now();
+            log.elapsed.crawlTime += mEnd - mStart;
+            log.elapsed.numCrawled += keyList.length;
+            
             mapResults = Object.assign(mapResults, v);
 
             numResponses += 1;
@@ -334,18 +328,21 @@ function mr(config) {
                     numResponses = 0;
                     let retList = [];
                     const retObj = {};
-                    // const objectTracker = {};
                     Object.keys(nidsToNodes).forEach((nid) => {
                       const remote = {service: uniqueID, method: 'reduce', node: nidsToNodes[nid]};
                       const message = {gid: context.gid, reduce: configuration["reduce"], uniqueID: uniqueID};
-                      // console.error("About to call reduce");
+                      const rStart = performance.now();
                       distribution.local.comm.send([message], remote, (e, v) => {
-                        // console.error("AFTER CALLING REDUCE USING LOCAL COMM");
-                        // console.error("AFTER reduce, e is ", e);
-                        // console.error("AFTER reduce, v is ", v);
                         if (e) {
                           cb(new Error("Error reducing with local comm"));
                           return;
+                        }
+
+                        const rEnd = performance.now();
+                        log.elapsed.indexTime += rEnd - rStart;
+                        
+                        if (typeof nidsToKeys[nid] != "undefined") {
+                          log.elapsed.numIndexed += nidsToKeys[nid].length;
                         }
 
                         if (v instanceof Array) {
@@ -353,16 +350,13 @@ function mr(config) {
                             retList = retList.concat(v);
                           }
                         } else {
-                          // console.error("IN NON-ARRAY RETLIST REDUCE CHECK");
                           Object.keys(v).forEach((key) => {
                             if (!(key in retObj)) {
                               retObj[key] = [];
                             }
                             retObj[key] = retObj[key].concat(v[key]);
                           })
-                          // retList.push(v);
                         }
-                        // console.error("after populating retlist or retobj");
 
                         // NEXT STEPS: need to check if something is an object and if so, 
                         // somehow merge results together
@@ -377,7 +371,6 @@ function mr(config) {
                         if (numResponses == numNodes) {
                           // Done with all 3 phases, starting teardown
                           // NEED TO UPDATE OBJECT TRACKER
-                          // console.error("sorting retobj");
                           try {
                             if (Object.keys(retObj).length > 0 && Object.values(retObj)[0] instanceof Array) { 
                               Object.keys(retObj).forEach((term) => {
@@ -385,28 +378,9 @@ function mr(config) {
                                   return Object.values(y)[0] - Object.values(x)[0];
                                 });
                               });
-                              // console.log("FINISHED RETOBJ IS ", retObj);
                             }
                           } catch (error) {
-                            // console.error("ERROR IN SORTING ", error);
                           }
-                          
-                         
-                          // try {
-                          //   if (Object.keys(objectTracker).length > 0 && Object.values(objectTracker)[0] instanceof Array) {
-                              
-                          //     Object.keys(objectTracker).forEach((term) => {
-                          //       objectTracker[term].sort((x, y) => { // sort a list of {k: v} objects
-                          //         return Object.values(y)[0] - Object.values(x)[0];
-                          //       });
-                          //     });
-                          //   } else {
-                              
-                          //   }
-                          // } catch (error) {
-                           
-                          // }
-                          // console.error("passed sorting phase, in cleanup phase");
 
                           let remNodeCount = 0; 
                           Object.keys(nodesTOCleanup).forEach(nk => {
@@ -417,34 +391,16 @@ function mr(config) {
                               remNodeCount += 1
                               
                               if (remNodeCount == Object.keys(nodesTOCleanup).length) {
-                                // console.error("reached remnodecount");
+                                
                                 distribution[context.gid].mem.delAll((e, v) => {
                                   distribution[context.gid].routes.rem(mrTempService, uniqueID, (e1, v1) => {
-                                    // NOTE: return object tracker if its key list is nonempty
-                                    // cb(null, retList);
-                                    // if (Object.keys(objectTracker).length > 0) {
-                                    //   // change retlist;
-                                    //   retList = [];
-                                    //   Object.keys(objectTracker).forEach((term) => {
-                                    //     retList.push({[term]: objectTracker[term]});
-                                    //   });
-                                    //   // ("should be returning new retList");
-                                    // } else {
-                                    //   // console.error("no need to change retlist");
-                                    // }
-                                    // console.error("about to return entirely");
                                     if (Object.keys(retObj).length > 0) {
-                                      // console.log("returning retobj, retobj is ", retObj);
                                       cb(null, retObj);
                                       return;
                                     } else {
-                                      // console.log("returning retlist, retlist is ", retList);
                                       cb(null, retList);
                                       return;
                                     }
-                                    // console.error("******ABOUT TO CALL BACK FROM MR");
-                                    // // cb(null, retList);
-                                    // return;
                                   });
                               })
                             }

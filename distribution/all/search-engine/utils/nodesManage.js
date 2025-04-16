@@ -2,10 +2,7 @@ const distribution = require('../../../../config.js');
 const id = distribution.util.id;
 const engineConfig = require('../engineConfig.js')
 const fs = require('fs');
-const log = require('./log')
-const SE_ERROR = log.ERROR
-const SE_LOG = log.LOG
-
+ 
 let localServer = null;
 const searchGroupConfig = engineConfig.searchGroupConfig
 const gid = engineConfig.searchGroupConfig.gid
@@ -13,8 +10,12 @@ const searchGroup = {};
 const n1 = engineConfig.workerNodes.n1
 const n2 = engineConfig.workerNodes.n2
 const n3 = engineConfig.workerNodes.n3
-const batchSize = 10;
-const kURLs = 10;
+// const n4 = engineConfig.workerNodes.n4
+// const n5 = engineConfig.workerNodes.n5 
+// const n6 = engineConfig.workerNodes.n6 
+// const n7 = engineConfig.workerNodes.n7
+const batchSize = engineConfig.batchSize;
+const kURLs = engineConfig.kURLs;
 
 function addNodesToGroup() {
     searchGroup[id.getSID(n1)] = n1;
@@ -78,7 +79,6 @@ let datasetKeys = []
 function setUpURLs(dataPath, cb) {
     try {
         let URLs = []
-        // const fileContent = fs.readFileSync(dataPath, 'utf-8');
         const path = require('path');
         const fileContent = fs.readFileSync(path.join(__dirname, dataPath), 'utf-8');
         const readURLs = fileContent.split('\n');
@@ -279,120 +279,9 @@ module.exports = {
     setUpNodes: setUpNodes, 
     shutDownNodes: shutDownNodes,
     setUpURLs: setUpURLs,  
-    // shardURLs: shardURLs, 
     processAllBatches: processAllBatches,
     setUpServer: setUpServer,
     searchKeyTerm: searchKeyTerm,
     mergeQueueIntoSearchDB: mergeQueueIntoSearchDB
+    batchSize: batchSize
 }
-
-// function setUpServer(batchKeys, cb) {
-//   const config = { gid: gid, datasetKeys: batchKeys };
-//   // SE_LOG("SETUP SERVER CALLED w/ config:", config.gid, config.datasetKeys);
-//   distribution[gid].search.setup(config, (e, v) => {
-//       // Maybe do updating index here (might need to change mr)
-//       // distribution.local.store.get(searchdb) <-- get object of terms: [{}]
-//       // then just directly do put 
-
-//       let newdb = v;
-//       // 1) Read the current queue file.  If it doesn't exist or is empty, we start with an empty object
-//       fs.readFile('newIndexQueue.json', 'utf8', (err, data) => {
-//           let queueData = {};
-//           if (!err && data) {
-//               try {
-//                   queueData = JSON.parse(data);
-//               } catch (parseErr) {
-//                   console.error("Failed to parse newIndexQueue.json:", parseErr);
-//               }
-//           }
-  
-//           // 2) Merge v into queueData
-//           Object.keys(v).forEach(term => {
-//           if (!(term in queueData)) {
-//               queueData[term] = [];
-//           }
-//           // Append the array of {url: freq} objects
-//           queueData[term] = queueData[term].concat(v[term]);
-//           });
-  
-//           // 3) Write the updated queue data back to newIndexQueue.json
-//           fs.writeFile('newIndexQueue.json', JSON.stringify(queueData, null, 2), (writeErr) => {
-//           if (writeErr) {
-//               console.error("Failed to write queue data:", writeErr);
-//               return cb(writeErr);
-//           }
-//           console.log("Appended new batch results to newIndexQueue.json");
-//           // Return the partial v or something else as needed
-//           cb(null, v);
-//           });
-//       });
-//   });
-// }
-
-
-// function mergeQueueIntoSearchDB(cb) {
-//   // console.log("MERGE CALLED SEARCH DB")
-//   fs.readFile('newIndexQueue.json', 'utf8', (err, data) => {
-//       if (err) {
-//         // If file doesn't exist, or there's an error reading, just skip
-//       //   console.log("BEFORE GET SEARCH DB", err)
-//         return cb(null, "No queued data found or error reading 'indexQueue.json'.");
-//       }
-      
-//       // Handle empty file case
-//       if (!data || data.trim().length === 0) {
-//         return cb(null, "Queue file is empty — nothing to merge.");
-//       }
-
-//       let queueData = {};
-//       try {
-//         queueData = JSON.parse(data); // { term1: [ {urlA: freq}, {urlB: freq} ], ... }
-//       } catch (parseErr) {
-//         return cb(parseErr);
-//       }
-//       // console.log("BEFORE GET SEARCH DB")
-//       // 2) Retrieve the existing global index from local store
-//       distribution.local.store.get("searchdb", (err2, globalIndex) => {
-//         if (err2 || !globalIndex) {
-//           // If no global index or error, assume an empty object
-//           globalIndex = {};
-//         }
-//         // 3) Merge queued entries into the existing globalIndex
-//         // Track merged terms
-//         const mergedTerms = [];
-//         Object.keys(queueData).forEach(term => {
-//           if (!(term in globalIndex)) {
-//             globalIndex[term] = [];
-//           }
-//           // Append the array of {url: freq} from the queue
-//           globalIndex[term] = globalIndex[term].concat(queueData[term]);
-  
-//           // Sort by descending frequency
-//           globalIndex[term].sort((a, b) => {
-//             const freqA = Object.values(a)[0];
-//             const freqB = Object.values(b)[0];
-//             return freqB - freqA;
-//           });
-  
-//           // Keep only top K if you have a limit
-//           globalIndex[term] = globalIndex[term].slice(0, kURLs);
-//           mergedTerms.push(term); // Mark this term for removal
-//         });
-  
-//         // 4) Store the updated global index back to 'searchdb'
-//         distribution.local.store.put(globalIndex, 'searchdb', (err3) => {
-//           if (err3) return cb(err3);
-//           // Remove merged terms from the queue
-//           mergedTerms.forEach(term => {
-//             delete queueData[term];
-//           });
-//           // 5) Clear the queue file, so we don't merge the same data again
-//           fs.writeFile('newIndexQueue.json', JSON.stringify(queueData, null, 2), (err4) => {
-//             if (err4) return cb(err4);
-//             // console.log("Merged queue into 'searchdb' and cleared 'newIndexQueue.json'.");
-//             return cb(null, "Merge complete");
-//           });
-//         });
-//       });
-//   });    
-// }

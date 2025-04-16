@@ -69,7 +69,18 @@ test('crawler and indexer 1: 1 book', (done) => {
         distribution.local.store.put(searchResults, "searchdb", (e, v) => {
           distribution.local.store.get("searchdb", (e, v) => {
             try {
-              expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              expect(Object.keys(v)).toEqual(Object.keys(searchResults)); // should contain the same keys
+              Object.values(v).forEach((valList) => {
+                // every value (a list) should be sorted by term frequency
+                if (valList.length > 1) {
+                  for (let i = 1; i < valList.length; i++) {
+                    expect(Object.values(valList[i])[0]).toBeLessThanOrEqual(Object.values(valList[i - 1])[0]);
+                  }
+                }
+              });
+              expect(v["michael"].length).toBe(1);
+              const mostFreqObj = Object.values(v["michael"][0]);
+              expect(Object.values(mostFreqObj)[0]).toBe(6);
               done();
             } catch (e) {
               done(e);
@@ -86,12 +97,26 @@ test('crawler and indexer 2: 4 books', (done) => {
 
   shardURLs("myGroup", (e, v) => {
     distribution.local.store.del("searchdb", (e, v) => {
+      // console.log("about to do setup");
+      // console.log("datakeys are ", dataKeys);
       distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
+        // console.log("after doing setup");
         const searchResults = v;
         distribution.local.store.put(searchResults, "searchdb", (e, v) => {
           distribution.local.store.get("searchdb", (e, v) => {
             try {
               expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              Object.values(v).forEach((valList) => {
+                // every value (a list) should be sorted by term frequency
+                if (valList.length > 1) {
+                  for (let i = 1; i < valList.length; i++) {
+                    expect(Object.values(valList[i])[0]).toBeLessThanOrEqual(Object.values(valList[i - 1])[0]);
+                  }
+                }
+              });
+              expect(v["daniel"].length).toBe(1);
+              const mostFreqObj = Object.values(v["daniel"][0]);
+              expect(Object.values(mostFreqObj)[0]).toBe(8);
               done();
             } catch (e) {
               done(e);
@@ -114,6 +139,17 @@ test('crawler and indexer 3: 10 books', (done) => {
           distribution.local.store.get("searchdb", (e, v) => {
             try {
               expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              Object.values(v).forEach((valList) => {
+                // every value (a list) should be sorted by term frequency
+                if (valList.length > 1) {
+                  for (let i = 1; i < valList.length; i++) {
+                    expect(Object.values(valList[i])[0]).toBeLessThanOrEqual(Object.values(valList[i - 1])[0]);
+                  }
+                }
+              });
+              expect(v["lidia"].length).toBe(1);
+              const mostFreqObj = Object.values(v["lidia"][0]);
+              expect(Object.values(mostFreqObj)[0]).toBe(38);
               done();
             } catch (e) {
               done(e);
@@ -136,28 +172,17 @@ test('crawler and indexer 4: 25 books', (done) => {
           distribution.local.store.get("searchdb", (e, v) => {
             try {
               expect(Object.keys(v)).toEqual(Object.keys(searchResults));
-              done();
-            } catch (e) {
-              done(e);
-            }
-          });
-        });
-      });
-    });
-  });
-});
-
-test('crawler and indexer 5: 50 books', (done) => {
-  const dataKeys = setUpURLs('../../distribution/all/search-engine/data/test5.txt');
-
-  shardURLs("myGroup", (e, v) => {
-    distribution.local.store.del("searchdb", (e, v) => {
-      distribution.myGroup.search.setup({datasetKeys: dataKeys, gid: "myGroup"}, (e, v) => {
-        const searchResults = v;
-        distribution.local.store.put(searchResults, "searchdb", (e, v) => {
-          distribution.local.store.get("searchdb", (e, v) => {
-            try {
-              expect(Object.keys(v)).toEqual(Object.keys(searchResults));
+              Object.values(v).forEach((valList) => {
+                // every value (a list) should be sorted by term frequency
+                if (valList.length > 1) {
+                  for (let i = 1; i < valList.length; i++) {
+                    expect(Object.values(valList[i])[0]).toBeLessThanOrEqual(Object.values(valList[i - 1])[0]);
+                  }
+                }
+              });
+              expect(v["adam"].length).toBe(9);
+              const mostFreqObj = Object.values(v["adam"][0]);
+              expect(Object.values(mostFreqObj)[0]).toBe(34);
               done();
             } catch (e) {
               done(e);

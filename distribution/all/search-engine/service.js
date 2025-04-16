@@ -1,11 +1,6 @@
 const distribution = require('../../../config.js');
 const log = require('./utils/log');
-
-const fs = require('fs')
-const SE_ERROR = log.ERROR
-const SE_LOG = log.LOG
-
-
+const path = require('path')
 const https = require('https');
 const {convert} = require('html-to-text');
 const natural = require('natural');
@@ -27,10 +22,6 @@ function search(config) {
             stemmed.push(stemmedWord);
           }
         });
-        // console.error("words post stemming are ", stemmed);
-        // stemmed.forEach((word) => {
-        //   console.error("THE CURRENT WORD IS ", word)
-        // })
         return stemmed; // return a list of stemmed words 
     }
     
@@ -93,22 +84,16 @@ function search(config) {
 
     function setup(configuration, callback) {
         // Assume these are the endpoints for the book txts.
-        const gid = configuration["gid"];
         const mapper = async (key, value, config) => {
           const urlBase = "https://atlas.cs.brown.edu/data/gutenberg/";
           const fullURL = urlBase + value;
           const gid = config["gid"]
-          const store = distribution.local.store;
 
           // Store the fetched text with key = original incomplete URL
           const plainText = await distribution[gid].search.getHTTP({ URL: fullURL });
           const mapperResult = await new Promise((resolve, reject) => {
-            // store.put(plainText, key, (err) => {
-            //   if (err) {
-            //     return reject(err);
-            //   }
               // Pass the desired output through resolve so that mapperResult gets set properly.
-            resolve([{ [fullURL]: plainText }]);
+              resolve([{ [fullURL]: plainText }]);
             // });
           });
           
@@ -143,26 +128,18 @@ function search(config) {
               })
           });
 
-          return termsToUrls;
-
+          // Then modify mr reducer as well to handle object outputs instead of map outputs 
+          return termsToUrls; 
         };  
 
         const datasetKeys = configuration.datasetKeys
+        const start = performance.now();
         distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
-          // console.error("AFTER RUNNING MR EXEC");
-          // console.error("E IS ", e);
-          // console.error("V IS ", v);
-          // v.forEach((currObj) => {
-          //   console.error("The current object is ", currObj);
-          // })
+          const end = performance.now();
+          log.elapsed.mrTime += end - start;
+          log.elapsed.numMr += 1;
           callback(e, v);
           return;
-          // distribution[context.gid].store.put(v, "searchdb", (e, v) => {
-          //   console.error("AFTER STORE PUT, e is ", e);
-          //   console.error("AFTER STORE PUT, v is ", v);
-          //   console.error("AFTER STORE PUT, cb is ", callback);
-          //   callback(e, v);
-          // });
         });
     }
 
@@ -188,31 +165,18 @@ function search(config) {
     }
 
     function findMatchingInIndex(file, keyTerms) {
-      // console.log("THE FILE: ", file, "term: ", keyTerms)
       keyTerms = keyTerms.replace(/\n/g, ' ');
       keyTerms = keyTerms.trim();
 
       let matchingLines = [];
       if (file != null) {   
-        // console.log("FILE IS NOT NUL!")
         Object.keys(file).forEach(key => {
-          // console.log("key: ", key)
-          // console.log('value: ', file[key])
           const term = key
           const freqs = file[key]
-          // console.log('term: ', term, 'freq: ', freqs, 'keyTerms: ', keyTerms)
-          // Matching criteria of what should be returned. 
-          // if (term.toLowerCase()
-          //     .split(' ')
-          //     .some(str => keyTerms.includes(str) || str.includes(keyTerms))) {
-          //   matchingLines.push(entry);
-          // }
           if (keyTerms.trim() == term.toLocaleLowerCase().trim()) {
             match = {key, freqs}
             matchingLines.push(match)
-          } else {
-            // console.log("keyterm: ", keyTerms, 'term: ', term)
-          }
+          } 
         })
       } 
 
@@ -221,18 +185,13 @@ function search(config) {
     }
 
     function query(configuration, callback) {
-      // console.log("ENTERED QUERY SERVICE: ", configuration)
       const start = performance.now();
       distribution.local.store.get('searchdb', (e,v) => {
-        // console.log("THE LOCAL GET NODE ID: ", distribution.node.config)
-        // console.log('In QUERY, getting values of searchdb', v, "e: ", e)
         if (v) {
           const end = performance.now();
-          console.log(`[QUERY-TIMING] query latency: ${(end - start).toFixed(2)} ms`);
-          console.log(`[QUERY-TIMING] query throughput: ${(1/ ((end - start) / 1000)).toFixed(2)} queries/sec`);
+          console.log(`Querier latency (ms/query): ${(end - start).toFixed(2)}`);
+          console.log(`Querier throughput (queries/s): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
           let results = findMatchingInIndex(v, configuration.terms)
-          // console.log("RESULT FOUND: ", results)
-
           callback(null, results);
         } else {
           callback(null, [])

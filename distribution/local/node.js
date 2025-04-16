@@ -130,7 +130,7 @@ const start = function(callback) {
   */
 
   server.listen(global.nodeConfig.port, global.nodeConfig.ip, () => {
-    console.log(`Server running at http://${global.nodeConfig.ip}:${global.nodeConfig.port}/`);
+    console.error(`Server running at http://${global.nodeConfig.ip}:${global.nodeConfig.port}/`);
     global.distribution.node.server = server;
     callback(server);
   });
