@@ -224,11 +224,11 @@ function manageQueryBooks() {
                           console.error(`All batches processed. Setting up Search Engine Server 🚀`);
                           console.error(`${searchEngineName} is ready!!`);
                           console.error("Crawler latency (ms/URL): ", (log.elapsed.crawlTime / log.elapsed.numCrawled).toFixed(2));
-                          console.error("Crawler throughput (URLs/s): ", (log.elapsed.numCrawled /(log.elapsed.crawlTime / 1000).toFixed(2)));
+                          console.error("Crawler throughput (URLs/s): ", (log.elapsed.numCrawled /(log.elapsed.crawlTime / 1000)).toFixed(2));
                           console.error("Indexer latency (ms/URL): ", (log.elapsed.indexTime / log.elapsed.numIndexed).toFixed(2));
-                          console.error("Indexer throughput (URLs/s): ", (log.elapsed.numIndexed /(log.elapsed.indexTime / 1000).toFixed(2)));
+                          console.error("Indexer throughput (URLs/s): ", (log.elapsed.numIndexed /(log.elapsed.indexTime / 1000)).toFixed(2));
                           console.error("MR latency (ms/MR operation): ", (log.elapsed.mrTime / log.elapsed.numMr).toFixed(2));
-                          console.error("MR throughput (MR operations/s): ", (log.elapsed.numMr /(log.elapsed.mrTime / 1000).toFixed(2)));
+                          console.error("MR throughput (MR operations/s): ", (log.elapsed.numMr /(log.elapsed.mrTime / 1000)).toFixed(2));
                         }
                     });
                 } else {

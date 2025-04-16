@@ -1,9 +1,7 @@
 const natural = require('natural');
 
 const workerNodes = {
-    n1: {ip: '127.0.0.1', port: 9001}, 
-    n2: {ip: '127.0.0.1', port: 9002}, 
-    n3: {ip: '127.0.0.1', port: 9003}
+    n1: {ip: '3.145.165.94', port: 1234}
 }
 
 const searchGroupConfig = {gid: 'search'}

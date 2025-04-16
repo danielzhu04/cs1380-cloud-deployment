@@ -18,10 +18,8 @@ const { serialize, deserialize } = require('../util/serialization');
  * @return {void}
  */
 function send(message, remote, callback) {
-    // console.log("** IN LOCAL COMM");
-    // console.log("message is ", message);
-    // console.log("remote is ", remote);
-    // console.log("Callback is ", callback);
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 200;
     if (typeof callback != 'function' || !(callback instanceof Function)) {
         callback = function() {};
     }
@@ -61,42 +59,58 @@ function send(message, remote, callback) {
         path: `/${gid}/${remote.service}/${remote.method}`,
         method: 'PUT',
     };
+    let attempt = 0;
 
-    let response = '';
-    
-    const req = http.request(options, (res) => {
-        res.on('data', (chunk) => {
-            response += chunk;
-        });
+    function trySend() {
+        let response = '';
 
-        res.on('error', (error) => {
-            callback(new Error(`Error getting response: ${error}`));
-        });
+        const req = http.request(options, (res) => {
+            res.on('data', (chunk) => {
+                response += chunk;
+            });
 
-        res.on('end', () => {
-            const deserializedRes = deserialize(response);
-            // console.log("DESERIALIZED RES IS ", deserializedRes);
-            if (deserializedRes instanceof Error) {
-                callback(deserializedRes);
-                return;
-            } else {
-                if (gid != 'local') {
-                    callback(deserializedRes.e, deserializedRes.v);
+            res.on('error', (error) => {
+                callback(new Error(`Error getting response: ${error}`));
+            });
+
+            res.on('end', () => {
+                let deserializedRes;
+                try {
+                    deserializedRes = deserialize(response);
+                } catch (e) {
+                    callback(new Error("Failed to deserialize response"));
                     return;
                 }
-                callback(null, deserializedRes);
-                return;
+
+                if (deserializedRes instanceof Error) {
+                    callback(deserializedRes);
+                } else {
+                    if (gid !== 'local') {
+                        callback(deserializedRes.e, deserializedRes.v);
+                    } else {
+                        callback(null, deserializedRes);
+                    }
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            if (attempt < MAX_RETRIES) {
+                console.log("RETRY COMM SEND")
+                attempt++;
+                const delay = RETRY_DELAY * Math.pow(2, attempt - 1); // exponential backoff
+                console.warn(`[comm] Socket error, retrying attempt ${attempt} in ${delay}ms...`);
+                setTimeout(trySend, delay);
+            } else {
+                callback(new Error(`Failed after ${MAX_RETRIES} retries: ${error.message}`));
             }
         });
-    });
-    
-    req.on('error', (error) => {
-        callback(new Error(`Error making HTTP request: ${error}`));
-        return;
-    });
 
-    req.write(toSend);
-    req.end();
+        req.write(toSend);
+        req.end();
+    }
+
+    trySend();
 }
 
 module.exports = {send};
