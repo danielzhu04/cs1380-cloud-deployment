@@ -10,10 +10,10 @@ const searchGroup = {};
 const n1 = engineConfig.workerNodes.n1
 const n2 = engineConfig.workerNodes.n2
 const n3 = engineConfig.workerNodes.n3
-// const n4 = engineConfig.workerNodes.n4
-// const n5 = engineConfig.workerNodes.n5 
-// const n6 = engineConfig.workerNodes.n6 
-// const n7 = engineConfig.workerNodes.n7
+const n4 = engineConfig.workerNodes.n4
+const n5 = engineConfig.workerNodes.n5 
+const n6 = engineConfig.workerNodes.n6 
+const n7 = engineConfig.workerNodes.n7
 const batchSize = engineConfig.batchSize;
 const kURLs = engineConfig.kURLs;
 
@@ -21,17 +21,35 @@ function addNodesToGroup() {
     searchGroup[id.getSID(n1)] = n1;
     searchGroup[id.getSID(n2)] = n2;
     searchGroup[id.getSID(n3)] = n3;
+    searchGroup[id.getSID(n4)] = n4;
+    searchGroup[id.getSID(n5)] = n5;
+    searchGroup[id.getSID(n6)] = n6;
+    searchGroup[id.getSID(n7)] = n7;
+    
 }
 
 function shutDownNodes(cb) {
     const remote = {service: 'status', method: 'stop'};
     remote.node = n1;
       distribution.local.comm.send([], remote, (e, v) => {
+        console.log('shutdown e: ', e, "v: ", v)
         remote.node = n2;
         distribution.local.comm.send([], remote, (e, v) => {
           remote.node = n3;
           distribution.local.comm.send([], remote, (e, v) => {
-                cb(); 
+            remote.node = n4;
+            distribution.local.comm.send([], remote, (e, v) => {
+              remote.node = n5;
+              distribution.local.comm.send([], remote, (e, v) => {
+                remote.node = n6;
+                distribution.local.comm.send([], remote, (e, v) => {
+                  remote.node = n7;
+                  distribution.local.comm.send([], remote, (e, v) => {
+                        cb(); 
+                    });
+                  });
+                });
+              });
             });
         });
     });
@@ -40,12 +58,15 @@ function shutDownNodes(cb) {
 function setUpNodes(cb) {
     // 2. Call main setup function (after ensuring all nodes have been shutdown)
     const startNodes = () => {
+        console.log("ENTER START NODES")
         addNodesToGroup()
     
         const groupInstantiation = () => {
             // Create the groups
             distribution.local.groups.put(searchGroupConfig, searchGroup, (e, v) => {
+                console.log("GROUP PUT: ", e, v)
                     distribution.search.groups.put(searchGroupConfig, searchGroup, (e,v) => {
+                        console.log("GROUP ALL PUT: ", e, v)
                         if (Object.keys(e).length == 0) {
                             cb(null,localServer)
                         } else {
@@ -58,20 +79,23 @@ function setUpNodes(cb) {
         // Now, start the nodes listening node
         distribution.node.start((server) => {
           localServer = server;
+          groupInstantiation();
     
             // Start the nodes
-            distribution.local.status.spawn(n1, (e, v) => {
-                distribution.local.status.spawn(n2, (e, v) => {
-                    distribution.local.status.spawn(n3, (e, v) => {
-                        groupInstantiation();
-                    });
-                });
-            });
+            // distribution.local.status.spawn(n1, (e, v) => {
+            //     console.log('e: ', e, "v: ", v)
+            //     distribution.local.status.spawn(n2, (e, v) => {
+            //         distribution.local.status.spawn(n3, (e, v) => {
+            //             groupInstantiation();
+            //         });
+            //     });
+            // });
         });
     }; 
 
+    startNodes()
     // 1. Stop the nodes if they are running
-    shutDownNodes(startNodes); 
+    // shutDownNodes(startNodes); 
 }
 
 let dataset = [] 
@@ -96,6 +120,7 @@ function setUpURLs(dataPath, cb) {
 }
 let fileUpdateInProgress = false;
 let fileUpdateQueue = [];
+
 
 function updateQueueFile(updater, cb) {
   fileUpdateQueue.push({ updater, cb });
