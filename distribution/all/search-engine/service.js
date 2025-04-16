@@ -107,20 +107,27 @@ function search(config) {
           const gid = config["gid"];
           const termsToUrls = {};
           values.forEach((html) => {
-              const terms = distribution[gid].search.stemHTML(html);
-              if (terms instanceof Error) {
-                return terms;
-              }
-              
-              terms.forEach((term) => {
-                  if (!(term in termsToUrls)) {
-                      termsToUrls[term] = {};
+              const { author, releaseDate, language } = distribution[gid].search.parseMetadata(html);
+              distribution.local.store.get("searchdb", (err2, globalIndex) => {
+                distribution.local.store.put(globalIndex, 'searchdb', (err3) => {
+                  distribution[gid].store.get()
+                  const terms = distribution[gid].search.stemHTML(html);
+                  if (terms instanceof Error) {
+                    return terms;
                   }
-                  if (!(key in termsToUrls[term])) {
-                      termsToUrls[term][key] = 0;
-                  }
-                  termsToUrls[term][key] += 1;
-              })
+                  
+                  terms.forEach((term) => {
+                      if (!(term in termsToUrls)) {
+                          termsToUrls[term] = {};
+                      }
+                      if (!(key in termsToUrls[term])) {
+                          termsToUrls[term][key] = 0;
+                      }
+                      termsToUrls[term][key] += 1;
+                      // termsToUrls[term][key].freq += 1;
+                  });
+                });
+              });
           });
 
           // Then modify mr reducer as well to handle object outputs instead of map outputs 
@@ -136,6 +143,27 @@ function search(config) {
           callback(e, v);
           return;
         });
+    }
+
+    function parseMetadata(bookText) {
+      let author = 'Unknown';
+      let releaseDate = 'Unknown';
+      let language = 'Unknown';
+    
+      // Naive approach: split lines, look for known prefixes
+      const lines = bookText.split('\n');
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('Author:')) {
+          author = trimmed.replace('Author:', '').trim();
+        } else if (trimmed.startsWith('Release Date:')) {
+          releaseDate = trimmed.replace('Release Date:', '').trim();
+        } else if (trimmed.startsWith('Language:')) {
+          language = trimmed.replace('Language:', '').trim();
+        }
+      });
+    
+      return { author, releaseDate, language };
     }
 
     function findMatchingInIndex(file, keyTerms) {
@@ -177,7 +205,8 @@ function search(config) {
         getHTTP, 
         setup,
         query,
-        stemHTML
+        stemHTML,
+        parseMetadata
     }
 }
 

@@ -212,6 +212,20 @@ function manageQueryBooks() {
     nodesManager.setUpNodes((e, v) => {
         if (!e) {
             localServer = v 
+            mergeInterval = setInterval(() => {
+                nodesManager.mergeQueueIntoSearchDB((err, msg) => {
+                  if (err) {
+                    console.error("Error merging queue data:", err);
+                  } else {
+                    // console.log(msg);
+                  }
+                }, () => {
+                    console.log("Stopping merge process after queue remained empty for 30s.");
+                    clearInterval(mergeInterval);
+                });
+              }, 500); // merge is called every 500ms
+
+            
             let path = '../data/books.txt'
             nodesManager.setUpURLs(path, (e, v) => {
                 const urlCount = v

@@ -8,7 +8,9 @@ const { serialize, deserialize } = require('../util/serialization');
     It will take a callback as an argument.
     After your node has booted, you should call the callback.
 */
-
+process.on('uncaughtException', (err) => {
+  console.log('Unhandled server error:', err);
+});
 
 const start = function(callback) {
   const server = http.createServer((req, res) => {
@@ -73,34 +75,47 @@ const start = function(callback) {
 
             const serviceFunc = service[methodName];
             const fullBody = Buffer.concat(body).toString('utf8');
-            const args = deserialize(fullBody);
+            let args = ""
+            try{
+              args = deserialize(fullBody);
+            } catch (error) {
+              res.end(serialize(error))
+              return;
+            }
+            if (args.length < serviceFunc.length - 1) {
+              res.statusCode = 400;
+              res.end(serialize(new Error(`Expected ${serviceFunc.length - 1} arguments, got ${args.length}`)));
+              return;
+            }
             // console.log("IN NODE.JS, DESERIALIZED ARGS ARE ", args);
+            // console.log("SERVICE FUNC: ", serviceFunc)
             serviceFunc(...args, (error, returnedVal) => {
+              // console.log("IN SERVICE FUNC CALLBACK")
               // console.log("error IN NODE is ", error);
-              // console.log("returned value is ", returnedVal);
-              // if (Array.isArray(returnedVal)) {
-              //   returnedVal.forEach((listItem) => {
-              //     console.log("list item in return list is: ");
-              //     console.log(listItem);
-              //   });
-              // }
               if (gid == 'local' && error) {
                 errToRet = new Error(`Cannot execute service method: ${error}`);
                 // console.log("ERROR RETRIEVING SERVICE IN NODE 2: ", errToRet)
+                // console.log("ERROR");
                 res.end(serialize(errToRet));
+                return;
               } else if (gid != 'local') {
                 // console.log("IN NON LOCAL");
                 const serializedRetVal = serialize({e: error, v: returnedVal});
                 res.end(serializedRetVal);
+                return;
               } else {
-                // console.log("IN LOCAL");
                 const serializedRetVal = serialize(returnedVal);
                 // console.log("SERIALIZED ret val ", serializedRetVal);
                 res.end(serializedRetVal);
+                return;
               }
             });
         });
       });
+    } else {
+      // send some kind of 405 or 404 response, e.g.:
+      res.statusCode = 405;
+      res.end("Method Not Allowed");
     }
   });
 
@@ -122,7 +137,7 @@ const start = function(callback) {
 
   server.on('error', (error) => {
     server.close((e) => {
-      // console.log("closing error: ", e)
+      console.log("closing error: ", e)
       log(`Server error: ${error}`);
       throw error;
     });
@@ -133,3 +148,6 @@ const start = function(callback) {
 module.exports = {
   start: start,
 };
+// module.exports = {
+//   start: require('@brown-ds/distribution/distribution/local/node').start,
+// }
