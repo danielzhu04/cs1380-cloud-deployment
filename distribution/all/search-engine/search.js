@@ -255,6 +255,9 @@ function manageQueryBooks() {
                   } else {
                     // console.log(msg);
                   }
+                }, () => {
+                    console.log("Stopping merge process after queue remained empty for 30s.");
+                    clearInterval(mergeInterval);
                 });
               }, 500); // merge is called every 500ms
 

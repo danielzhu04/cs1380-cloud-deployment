@@ -13,7 +13,7 @@ const searchGroup = {};
 const n1 = engineConfig.workerNodes.n1
 const n2 = engineConfig.workerNodes.n2
 const n3 = engineConfig.workerNodes.n3
-const batchSize = 7;
+const batchSize = 10;
 const kURLs = 10;
 
 function addNodesToGroup() {
@@ -207,6 +207,7 @@ function processAllBatches(finalCallback) {
       }, 500); // 500 ms delay – adjust as needed
     });
 }
+
 
 function mergeQueueIntoSearchDB(cb) {
   updateQueueFile((queueData) => {

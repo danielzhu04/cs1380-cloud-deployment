@@ -13,7 +13,7 @@ const natural = require('natural');
 function search(config) {
     const context = {};
     context.gid = config.gid || 'all';
-    context.hash = config.hash || global.distribution.util.id.naiveHash;
+    context.hash = config.hash || global.distribution.util.id.consistentHash;
 
     function stemHTML(html) {
         if (typeof html != "string") {
@@ -122,6 +122,10 @@ function search(config) {
           const gid = config["gid"];
           const termsToUrls = {};
           values.forEach((html) => {
+              const { author, releaseDate, language } = distribution[gid].search.parseMetadata(html);
+              distribution.local.store.get("searchdb", (err2, globalIndex) => {
+              distribution.local.store.put(globalIndex, 'searchdb', (err3) => {
+              distribution[gid].store.get()
               const terms = distribution[gid].search.stemHTML(html);
               if (terms instanceof Error) {
                 return terms;
@@ -135,24 +139,12 @@ function search(config) {
                       termsToUrls[term][key] = 0;
                   }
                   termsToUrls[term][key] += 1;
+                  // termsToUrls[term][key].freq += 1;
               })
           });
 
-          // console.error("AFTER POPULATING TERMSTOURLS");
-          // console.error("Terms to urls is ", termsToUrls); // return terms to URLs
-          // Then modify mr reducer as well to handle object outputs instead of map outputs 
           return termsToUrls;
 
-          // const toReturn = [];
-          // Object.keys(termsToUrls).forEach((term) => {
-          //     const tempList = [termsToUrls[term]];
-          //     toReturn.push({[term]: tempList});
-          // });
-          
-          // // console.error("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
-          // // NOTE TO SELF: check if there is a current searchdb and if there is, append the results to that 
-          // console.error("ToReturn is ", toReturn);
-          // return toReturn;
         };  
 
         const datasetKeys = configuration.datasetKeys
@@ -172,6 +164,27 @@ function search(config) {
           //   callback(e, v);
           // });
         });
+    }
+
+    function parseMetadata(bookText) {
+      let author = 'Unknown';
+      let releaseDate = 'Unknown';
+      let language = 'Unknown';
+    
+      // Naive approach: split lines, look for known prefixes
+      const lines = bookText.split('\n');
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('Author:')) {
+          author = trimmed.replace('Author:', '').trim();
+        } else if (trimmed.startsWith('Release Date:')) {
+          releaseDate = trimmed.replace('Release Date:', '').trim();
+        } else if (trimmed.startsWith('Language:')) {
+          language = trimmed.replace('Language:', '').trim();
+        }
+      });
+    
+      return { author, releaseDate, language };
     }
 
     function findMatchingInIndex(file, keyTerms) {
@@ -231,7 +244,8 @@ function search(config) {
         getHTTP, 
         setup,
         query,
-        stemHTML
+        stemHTML,
+        parseMetadata
     }
 }
 
