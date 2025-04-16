@@ -154,7 +154,7 @@ function setUpServer(batchKeys, cb) {
         console.error(updateErr);
         return cb(updateErr);
       }
-      console.log("Appended new batch results to newIndexQueue.json");
+      // console.log("Appended new batch results to newIndexQueue.json");
       // cb(null, v);
     });
   });
@@ -200,7 +200,7 @@ function processAllBatches(finalCallback) {
     processBatch(batch, (err, result) => {
       if (err) return finalCallback(err);
       const end = performance.now();
-      console.log(`Batch latency: ${(end - start).toFixed(2)} ms`);
+      // console.log(`Batch latency: ${(end - start).toFixed(2)} ms`);
       // After processing this batch, process the next one recursively.
       setTimeout(() => {
         processAllBatches(finalCallback);
