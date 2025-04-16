@@ -1,25 +1,14 @@
 const distribution = require('../../../config.js');
 const log = require('./utils/log');
-
-const fs = require('fs')
 const path = require('path')
-const SE_ERROR = log.ERROR
-const SE_LOG = log.LOG
-
-
 const https = require('https');
 const {convert} = require('html-to-text');
 const natural = require('natural');
-
-const mrPath = path.resolve(__dirname, `../../../performance/search-engine/m6.mrPerformance.txt`);
 
 function search(config) {
     const context = {};
     context.gid = config.gid || 'all';
     context.hash = config.hash || global.distribution.util.id.consistentHash;
-
-    // For M6 performance
-    // const mrPath = path.resolve(perfDir, "/m6.mrPerformance.js");
 
     function stemHTML(html) {
         if (typeof html != "string") {
@@ -33,49 +22,10 @@ function search(config) {
             stemmed.push(stemmedWord);
           }
         });
-        // console.error("words post stemming are ", stemmed);
-        // stemmed.forEach((word) => {
-        //   console.error("THE CURRENT WORD IS ", word)
-        // })
         return stemmed; // return a list of stemmed words 
     }
     
     function getHTTP(config, retries = 3) {
-      // const fullURL = config["URL"];
-      // const agent = new https.Agent({
-      //   rejectUnauthorized: false
-      // });
-
-      // return new Promise((resolve, reject) => {
-      //   const req = https.get(fullURL, { agent }, (res) => {
-      //     let data = '';
-    
-      //     res.on('data', chunk => {
-      //       data += chunk;
-      //     });
-    
-      //     res.on('end', () => {
-      //       data = convert(data)
-      //       data = data.normalize('NFKC');
-      //       data = data.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
-      //       data = data.replace(/\\,/g, '\\');
-      //       resolve(data); // Return the plain text
-      //     });
-    
-      //     res.on('error', (err) => {
-      //       reject(err);
-      //     });
-      //   });
-    
-      //   req.on('error', (err) => {
-      //     reject(err);
-      //   });
-    
-      //   // req.setTimeout(10000, () => {
-      //   //   req.destroy(); // Clean up the request
-      //   //   reject(new Error('Request timeout'));
-      //   // });
-      // }); 
       const fullURL = config["URL"];
       const agent = new https.Agent({
         rejectUnauthorized: false,
@@ -134,20 +84,14 @@ function search(config) {
 
     function setup(configuration, callback) {
         // Assume these are the endpoints for the book txts.
-        const gid = configuration["gid"];
         const mapper = async (key, value, config) => {
           const urlBase = "https://atlas.cs.brown.edu/data/gutenberg/";
           const fullURL = urlBase + value;
           const gid = config["gid"]
-          const store = distribution.local.store;
 
           // Store the fetched text with key = original incomplete URL
           const plainText = await distribution[gid].search.getHTTP({ URL: fullURL });
           const mapperResult = await new Promise((resolve, reject) => {
-            // store.put(plainText, key, (err) => {
-            //   if (err) {
-            //     return reject(err);
-            //   }
               // Pass the desired output through resolve so that mapperResult gets set properly.
               resolve([{ [fullURL]: plainText }]);
             // });
@@ -179,21 +123,8 @@ function search(config) {
               })
           });
 
-          // console.error("AFTER POPULATING TERMSTOURLS");
-          // console.error("Terms to urls is ", termsToUrls); // return terms to URLs
           // Then modify mr reducer as well to handle object outputs instead of map outputs 
-          return termsToUrls;
-
-          // const toReturn = [];
-          // Object.keys(termsToUrls).forEach((term) => {
-          //     const tempList = [termsToUrls[term]];
-          //     toReturn.push({[term]: tempList});
-          // });
-          
-          // // console.error("AFTER CONVERTING TERMSTOURLS TO LIST FORMAT");
-          // // NOTE TO SELF: check if there is a current searchdb and if there is, append the results to that 
-          // console.error("ToReturn is ", toReturn);
-          // return toReturn;
+          return termsToUrls; 
         };  
 
         const datasetKeys = configuration.datasetKeys
@@ -202,56 +133,24 @@ function search(config) {
           const end = performance.now();
           log.elapsed.mrTime += end - start;
           log.elapsed.numMr += 1;
-          // try {
-          //   // console.log("about to log to mrPath: ", mrPath);
-          //   fs.appendFileSync(mrPath, `MapReduce latency (ms/mr operation): ${end - start}\n`);
-          // } catch (error) {
-          //   // console.log("ERROR WRITING FILE ", error);
-          // }
-
-          // console.error("AFTER RUNNING MR EXEC");
-          // console.error("E IS ", e);
-          // console.error("V IS ", v);
-          // v.forEach((currObj) => {
-          //   console.error("The current object is ", currObj);
-          // })
           callback(e, v);
           return;
-          // distribution[context.gid].store.put(v, "searchdb", (e, v) => {
-          //   console.error("AFTER STORE PUT, e is ", e);
-          //   console.error("AFTER STORE PUT, v is ", v);
-          //   console.error("AFTER STORE PUT, cb is ", callback);
-          //   callback(e, v);
-          // });
         });
     }
 
     function findMatchingInIndex(file, keyTerms) {
-      // console.log("THE FILE: ", file, "term: ", keyTerms)
       keyTerms = keyTerms.replace(/\n/g, ' ');
       keyTerms = keyTerms.trim();
 
       let matchingLines = [];
       if (file != null) {   
-        // console.log("FILE IS NOT NUL!")
         Object.keys(file).forEach(key => {
-          // console.log("key: ", key)
-          // console.log('value: ', file[key])
           const term = key
           const freqs = file[key]
-          // console.log('term: ', term, 'freq: ', freqs, 'keyTerms: ', keyTerms)
-          // Matching criteria of what should be returned. 
-          // if (term.toLowerCase()
-          //     .split(' ')
-          //     .some(str => keyTerms.includes(str) || str.includes(keyTerms))) {
-          //   matchingLines.push(entry);
-          // }
           if (keyTerms.trim() == term.toLocaleLowerCase().trim()) {
             match = {key, freqs}
             matchingLines.push(match)
-          } else {
-            // console.log("keyterm: ", keyTerms, 'term: ', term)
-          }
+          } 
         })
       } 
 
@@ -260,18 +159,13 @@ function search(config) {
     }
 
     function query(configuration, callback) {
-      // console.log("ENTERED QUERY SERVICE: ", configuration)
       const start = performance.now();
       distribution.local.store.get('searchdb', (e,v) => {
-        // console.log("THE LOCAL GET NODE ID: ", distribution.node.config)
-        // console.log('In QUERY, getting values of searchdb', v, "e: ", e)
         if (v) {
           const end = performance.now();
           console.log(`Querier latency (ms/query): ${(end - start).toFixed(2)}`);
           console.log(`Querier throughput (queries/s): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
           let results = findMatchingInIndex(v, configuration.terms)
-          // console.log("RESULT FOUND: ", results)
-
           callback(null, results);
         } else {
           callback(null, [])
