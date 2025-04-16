@@ -94,38 +94,72 @@ function setUpURLs(dataPath, cb) {
         cb(err, null)
     }
 }
+let fileUpdateInProgress = false;
+let fileUpdateQueue = [];
+
+function updateQueueFile(updater, cb) {
+  fileUpdateQueue.push({ updater, cb });
+  processQueue();
+}
+
+function processQueue() {
+  if (fileUpdateInProgress) return;
+  if (fileUpdateQueue.length === 0) return;
+  fileUpdateInProgress = true;
+  const next = fileUpdateQueue.shift();
+  fs.readFile('newIndexQueue.json', 'utf8', (err, data) => {
+    let queueData = {};
+    if (!err && data) {
+      try {
+        queueData = JSON.parse(data);
+      } catch (parseErr) {
+        console.error(parseErr);
+      }
+    }
+    let updatedData;
+    try {
+      updatedData = next.updater(queueData) || {};
+    } catch (uErr) {
+      fileUpdateInProgress = false;
+      next.cb(uErr);
+      process.nextTick(processQueue);
+      return;
+    }
+    fs.writeFile('newIndexQueue.json', JSON.stringify(updatedData, null, 2), (writeErr) => {
+      fileUpdateInProgress = false;
+      next.cb(writeErr);
+      process.nextTick(processQueue);
+    });
+  });
+}
 
 function setUpServer(batchKeys, cb) {
-    const config = { gid: gid, datasetKeys: batchKeys };
-    distribution[gid].search.setup(config, (e, v) => {
-        // Maybe do updating index here (might need to change mr)
-        // distribution.local.store.get(searchdb) <-- get object of terms: [{}]
-        // then just directly do put 
-        let newdb = v;
-        distribution.local.store.get("searchdb", (e, v) => {
-            // note to self: must delete old searchdb file before running program
-            if (!e) { // have a searchdb file
-                Object.keys(v).forEach((key) => {
-                    if (!(key in newdb)) {
-                        newdb[key] = [];
-                    }
-                    newdb[key] = newdb[key].concat(v[key]);
-                });
-
-                // sort everything
-                Object.keys(newdb).forEach((term) => {
-                    newdb[term].sort((x, y) => {
-                        return Object.values(y)[0] - Object.values(x)[0];
-                    });
-                    newdb[term] = newdb[term].slice(0, kURLs);
-                });
-            }
-            distribution.local.store.put(newdb, 'searchdb', (e, v) => {
-                cb(e, v);
-            });
-        });
+  const config = { gid: gid, datasetKeys: batchKeys };
+  distribution[gid].search.setup(config, (err, v) => {
+    if (err) {
+      return cb(err);
+    }
+    cb(null, v);
+    
+    updateQueueFile((queueData) => {
+      Object.keys(v).forEach(term => {
+        if (!queueData[term]) {
+          queueData[term] = [];
+        }
+        queueData[term] = queueData[term].concat(v[term]);
+      });
+      return queueData;
+    }, (updateErr) => {
+      if (updateErr) {
+        console.error(updateErr);
+        return cb(updateErr);
+      }
+      console.log("Appended new batch results to newIndexQueue.json");
+      // cb(null, v);
     });
+  });
 }
+
 
 function processBatch(batch, cb) {
     let cntr = 0;
@@ -160,16 +194,72 @@ function processAllBatches(finalCallback) {
     if (dataset.length === 0) {
       return finalCallback(null, "All batches processed");
     }
-    
+    const start = performance.now();
     // Extract the next batch (up to 4 URLs)
     const batch = dataset.splice(0, batchSize);
     processBatch(batch, (err, result) => {
       if (err) return finalCallback(err);
+      const end = performance.now();
+      console.log(`Batch latency: ${(end - start).toFixed(2)} ms`);
       // After processing this batch, process the next one recursively.
       setTimeout(() => {
         processAllBatches(finalCallback);
       }, 500); // 500 ms delay – adjust as needed
     });
+}
+
+
+function mergeQueueIntoSearchDB(cb) {
+  updateQueueFile((queueData) => {
+    return queueData;
+  }, (updateErr) => {
+    if (updateErr) {
+      return cb(updateErr);
+    }
+    fs.readFile('newIndexQueue.json', 'utf8', (err, data) => {
+      if (err || !data) {
+        return cb(null, "Queue file empty or read error, nothing to merge.");
+      }
+      let queueData;
+      try {
+        queueData = JSON.parse(data);
+      } catch (e) {
+        return cb(e);
+      }
+      if (!queueData || Object.keys(queueData).length === 0) {
+        return cb(null, "Queue file is empty - nothing to merge.");
+      }
+      distribution.local.store.get("searchdb", (err2, globalIndex) => {
+        if (err2 || !globalIndex) {
+          globalIndex = {};
+        }
+        const mergedTerms = [];
+        Object.keys(queueData).forEach(term => {
+          if (!globalIndex[term]) {
+            globalIndex[term] = [];
+          }
+          globalIndex[term] = globalIndex[term].concat(queueData[term]);
+          globalIndex[term].sort((a, b) => {
+            const freqA = Object.values(a)[0];
+            const freqB = Object.values(b)[0];
+            return freqB - freqA;
+          });
+          globalIndex[term] = globalIndex[term].slice(0, kURLs);
+          mergedTerms.push(term);
+        });
+        distribution.local.store.put(globalIndex, 'searchdb', (err3) => {
+          if (err3) return cb(err3);
+          mergedTerms.forEach(term => {
+            delete queueData[term];
+          });
+          fs.writeFile('newIndexQueue.json', JSON.stringify(queueData, null, 2), (err4) => {
+            if (err4) return cb(err4);
+            cb(null, "Merge complete");
+          });
+        });
+      });
+    });
+  });
 }
 
 function searchKeyTerm(searchTerms, cb) {
@@ -192,5 +282,6 @@ module.exports = {
     processAllBatches: processAllBatches,
     setUpServer: setUpServer,
     searchKeyTerm: searchKeyTerm,
+    mergeQueueIntoSearchDB: mergeQueueIntoSearchDB
     batchSize: batchSize
 }
