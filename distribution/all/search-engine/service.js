@@ -160,17 +160,34 @@ function search(config) {
 
     function query(configuration, callback) {
       const start = performance.now();
-      distribution.local.store.get('searchdb', (e,v) => {
-        if (v) {
-          const end = performance.now();
-          console.log(`Querier latency (ms/query): ${(end - start).toFixed(2)}`);
-          console.log(`Querier throughput (queries/s): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
-          let results = findMatchingInIndex(v, configuration.terms)
-          callback(null, results);
-        } else {
-          callback(null, [])
+      // distribution.local.store.get('searchdb', (e,v) => {
+      //   if (v) {
+      //     const end = performance.now();
+      //     console.log(`Querier latency (ms/query): ${(end - start).toFixed(2)}`);
+      //     console.log(`Querier throughput (queries/s): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
+      //     let results = findMatchingInIndex(v, configuration.terms)
+      //     callback(null, results);
+      //   } else {
+      //     callback(null, [])
+      //   }
+      // })  
+      let term = configuration.terms.replace(/\n/g, ' ');
+      term = term.trim();
+      distribution.local.store.get(term, (err, topKArray) => {
+        const end = performance.now();
+        console.log(`Querier latency (ms/query): ${(end - start).toFixed(2)}`);
+        console.log(`Querier throughput (queries/s): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
+        if (err || !Array.isArray(topKArray)) {
+          return callback(null, []); // no results
         }
-      })  
+        // topKArray is e.g. [ { "https://...": freq }, { ... }, ... ]
+        searchResult = [{
+          key: term,        // or the stemmedSearchTerms if you prefer
+          freqs: topKArray
+        }];
+        // console.log("TK", topKArray)
+        callback(null, searchResult);
+      });
     }
 
     return {

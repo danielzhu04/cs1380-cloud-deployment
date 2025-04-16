@@ -101,7 +101,7 @@ async function search(searchTerms) {
             return null;  
         } else {
             let searchResult = v
-
+            // console.log("searchResults: ", searchResult)
             // Format search result into table format.  
             let formattedReuslt = ""
             if (searchResult == null 

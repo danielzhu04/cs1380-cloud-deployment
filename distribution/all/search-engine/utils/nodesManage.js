@@ -73,6 +73,89 @@ function setUpNodes(cb) {
     // 1. Stop the nodes if they are running
     shutDownNodes(startNodes); 
 }
+// const distribution = require('../../../../config.js');
+// const id = distribution.util.id;
+// const engineConfig = require('../engineConfig.js')
+// const fs = require('fs');
+ 
+// let localServer = null;
+// const searchGroupConfig = engineConfig.searchGroupConfig
+// const gid = engineConfig.searchGroupConfig.gid
+// const searchGroup = {};    
+// const n1 = engineConfig.workerNodes.n1
+// const n2 = engineConfig.workerNodes.n2
+// const n3 = engineConfig.workerNodes.n3
+// // const n4 = engineConfig.workerNodes.n4
+// // const n5 = engineConfig.workerNodes.n5 
+// // const n6 = engineConfig.workerNodes.n6 
+// // const n7 = engineConfig.workerNodes.n7
+// const batchSize = engineConfig.batchSize;
+// const kURLs = engineConfig.kURLs;
+
+// function addNodesToGroup() {
+//     searchGroup[id.getSID(n1)] = n1;
+//     searchGroup[id.getSID(n2)] = n2;
+//     searchGroup[id.getSID(n3)] = n3;
+// }
+
+// function shutDownNodes(cb) {
+//     const remote = {service: 'status', method: 'stop'};
+//     remote.node = n1;
+//       distribution.local.comm.send([], remote, (e, v) => {
+//         console.log('shutdown e: ', e, "v: ", v)
+//         remote.node = n2;
+//         distribution.local.comm.send([], remote, (e, v) => {
+//           remote.node = n3;
+//           distribution.local.comm.send([], remote, (e, v) => {
+//                 cb(); 
+//             });
+//         });
+//     });
+// }
+
+// function setUpNodes(cb) {
+//     // 2. Call main setup function (after ensuring all nodes have been shutdown)
+//     const startNodes = () => {
+//         console.log("ENTER START NODES")
+//         addNodesToGroup()
+    
+//         const groupInstantiation = () => {
+//             // Create the groups
+//             distribution.local.groups.put(searchGroupConfig, searchGroup, (e, v) => {
+//                 console.log("GROUP PUT: ", e, v)
+//                     distribution.search.groups.put(searchGroupConfig, searchGroup, (e,v) => {
+//                         console.log("GROUP ALL PUT: ", e, v)
+//                         if (Object.keys(e).length == 0) {
+//                             cb(null,localServer)
+//                         } else {
+//                             cb(e, null)
+//                         }
+//                     })
+//             });
+//         };
+
+//         // Now, start the nodes listening node
+//         distribution.node.start((server) => {
+//           localServer = server;
+//           groupInstantiation();
+    
+//             // Start the nodes
+//             // distribution.local.status.spawn(n1, (e, v) => {
+//             //     console.log('e: ', e, "v: ", v)
+//             //     distribution.local.status.spawn(n2, (e, v) => {
+//             //         distribution.local.status.spawn(n3, (e, v) => {
+//             //             groupInstantiation();
+//             //         });
+//             //     });
+//             // });
+//         });
+//     }; 
+
+//     startNodes()
+//     // 1. Stop the nodes if they are running
+//     // shutDownNodes(startNodes); 
+// }
+
 
 let dataset = [] 
 let datasetKeys = []
@@ -210,51 +293,127 @@ function processAllBatches(finalCallback) {
 
 
 function mergeQueueIntoSearchDB(cb) {
-  updateQueueFile((queueData) => {
-    return queueData;
-  }, (updateErr) => {
+  // updateQueueFile((queueData) => {
+  //   return queueData;
+  // }, (updateErr) => {
+  //   if (updateErr) {
+  //     return cb(updateErr);
+  //   }
+  //   fs.readFile('newIndexQueue.json', 'utf8', (err, data) => {
+  //     if (err || !data) {
+  //       return cb(null, "Queue file empty or read error, nothing to merge.");
+  //     }
+  //     let queueData;
+  //     try {
+  //       queueData = JSON.parse(data);
+  //     } catch (e) {
+  //       return cb(e);
+  //     }
+  //     if (!queueData || Object.keys(queueData).length === 0) {
+  //       return cb(null, "Queue file is empty - nothing to merge.");
+  //     }
+  //     distribution.local.store.get("searchdb", (err2, globalIndex) => {
+  //       if (err2 || !globalIndex) {
+  //         globalIndex = {};
+  //       }
+  //       const mergedTerms = [];
+  //       Object.keys(queueData).forEach(term => {
+  //         if (!globalIndex[term]) {
+  //           globalIndex[term] = [];
+  //         }
+  //         globalIndex[term] = globalIndex[term].concat(queueData[term]);
+  //         globalIndex[term].sort((a, b) => {
+  //           const freqA = Object.values(a)[0];
+  //           const freqB = Object.values(b)[0];
+  //           return freqB - freqA;
+  //         });
+  //         globalIndex[term] = globalIndex[term].slice(0, kURLs);
+  //         mergedTerms.push(term);
+  //       });
+  //       distribution.local.store.put(globalIndex, 'searchdb', (err3) => {
+  //         if (err3) return cb(err3);
+  //         mergedTerms.forEach(term => {
+  //           delete queueData[term];
+  //         });
+  //         fs.writeFile('newIndexQueue.json', JSON.stringify(queueData, null, 2), (err4) => {
+  //           if (err4) return cb(err4);
+  //           cb(null, "Merge complete");
+  //         });
+  //       });
+  //     });
+  //   });
+  // });
+  // Step 1) Ensure no concurrent writes to newIndexQueue.json
+  updateQueueFile((existingQueue) => existingQueue, (updateErr) => {
     if (updateErr) {
       return cb(updateErr);
     }
+
+    // Step 2) Read the queue file
     fs.readFile('newIndexQueue.json', 'utf8', (err, data) => {
       if (err || !data) {
         return cb(null, "Queue file empty or read error, nothing to merge.");
       }
+
       let queueData;
       try {
         queueData = JSON.parse(data);
-      } catch (e) {
-        return cb(e);
+      } catch (parseError) {
+        return cb(parseError);
       }
-      if (!queueData || Object.keys(queueData).length === 0) {
+
+      const termsToMerge = Object.keys(queueData);
+      if (termsToMerge.length === 0) {
         return cb(null, "Queue file is empty - nothing to merge.");
       }
-      distribution.local.store.get("searchdb", (err2, globalIndex) => {
-        if (err2 || !globalIndex) {
-          globalIndex = {};
-        }
-        const mergedTerms = [];
-        Object.keys(queueData).forEach(term => {
-          if (!globalIndex[term]) {
-            globalIndex[term] = [];
+
+      // We'll track how many merges remain
+      let pending = termsToMerge.length;
+      const mergedTerms = [];
+
+      // Step 3) Merge each term individually
+      termsToMerge.forEach(term => {
+        // Get the partial array from the queue
+        const newEntries = queueData[term]; // e.g. [ { urlA: freqA }, { urlB: freqB }...]
+
+        // Step 3a) Fetch existing data for 'term'
+        distribution.local.store.get(term, (err2, existingVal) => {
+          // If none exists or error, assume an empty array
+          if (err2 || !Array.isArray(existingVal)) {
+            existingVal = [];
           }
-          globalIndex[term] = globalIndex[term].concat(queueData[term]);
-          globalIndex[term].sort((a, b) => {
+
+          // Step 3b) Merge + sort
+          // Just concatenate the arrays
+          const combined = existingVal.concat(newEntries);
+          combined.sort((a, b) => {
+            // Each element is e.g. { "someURL": freq }
             const freqA = Object.values(a)[0];
             const freqB = Object.values(b)[0];
             return freqB - freqA;
           });
-          globalIndex[term] = globalIndex[term].slice(0, kURLs);
-          mergedTerms.push(term);
-        });
-        distribution.local.store.put(globalIndex, 'searchdb', (err3) => {
-          if (err3) return cb(err3);
-          mergedTerms.forEach(term => {
+
+          // Keep top-K
+          const topK = combined.slice(0, kURLs);
+
+          // Step 3c) Store it back
+          distribution.local.store.put(topK, term, (err3) => {
+            if (err3) {
+              console.error(`Failed storing topK for term '${term}':`, err3);
+            } else {
+              mergedTerms.push(term);
+            }
+
+            // Step 3d) Remove term from queue
             delete queueData[term];
-          });
-          fs.writeFile('newIndexQueue.json', JSON.stringify(queueData, null, 2), (err4) => {
-            if (err4) return cb(err4);
-            cb(null, "Merge complete");
+
+            // If done merging all terms, rewrite the queue file
+            if (--pending === 0) {
+              fs.writeFile('newIndexQueue.json', JSON.stringify(queueData, null, 2), (err4) => {
+                if (err4) return cb(err4);
+                cb(null, `Merge complete. Merged ${mergedTerms.length} terms.`);
+              });
+            }
           });
         });
       });
