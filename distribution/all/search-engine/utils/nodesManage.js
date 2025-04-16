@@ -2,10 +2,7 @@ const distribution = require('../../../../config.js');
 const id = distribution.util.id;
 const engineConfig = require('../engineConfig.js')
 const fs = require('fs');
-const log = require('./log')
-const SE_ERROR = log.ERROR
-const SE_LOG = log.LOG
-
+ 
 let localServer = null;
 const searchGroupConfig = engineConfig.searchGroupConfig
 const gid = engineConfig.searchGroupConfig.gid
@@ -13,6 +10,10 @@ const searchGroup = {};
 const n1 = engineConfig.workerNodes.n1
 const n2 = engineConfig.workerNodes.n2
 const n3 = engineConfig.workerNodes.n3
+// const n4 = engineConfig.workerNodes.n4
+// const n5 = engineConfig.workerNodes.n5 
+// const n6 = engineConfig.workerNodes.n6 
+// const n7 = engineConfig.workerNodes.n7
 const batchSize = engineConfig.batchSize;
 const kURLs = engineConfig.kURLs;
 
@@ -78,7 +79,6 @@ let datasetKeys = []
 function setUpURLs(dataPath, cb) {
     try {
         let URLs = []
-        // const fileContent = fs.readFileSync(dataPath, 'utf-8');
         const path = require('path');
         const fileContent = fs.readFileSync(path.join(__dirname, dataPath), 'utf-8');
         const readURLs = fileContent.split('\n');
@@ -97,7 +97,6 @@ function setUpURLs(dataPath, cb) {
 
 function setUpServer(batchKeys, cb) {
     const config = { gid: gid, datasetKeys: batchKeys };
-    // SE_LOG("SETUP SERVER CALLED w/ config:", config.gid, config.datasetKeys);
     distribution[gid].search.setup(config, (e, v) => {
         // Maybe do updating index here (might need to change mr)
         // distribution.local.store.get(searchdb) <-- get object of terms: [{}]
@@ -173,39 +172,6 @@ function processAllBatches(finalCallback) {
     });
 }
 
-// function shardURLs(cb) {
-//     if (dataset.length === 0) {
-//         cb(null, 'empty') 
-//         return
-//     }
-
-//     let cntr = 0;
-//       // Send the dataset to the worker nodes. 
-//       dataset.forEach((o) => {
-//         const key = Object.keys(o)[0];
-//         const value = o[key];
-//         distribution[gid].store.put(value, key, (e, v) => {
-//           cntr++;
-//           // Return to main repl once done. 
-//           if (cntr === dataset.length) {
-//             cb(e, v)
-//             return; 
-//           }
-//         });
-//     });
-// }
-
-// function setUpServer(cb) {
-//     const config = {gid: gid, datasetKeys: datasetKeys}
-//     SE_LOG("SETUP UP SERVER CALLED w/ config: ", config.gid, config.datasetKeys)
-//     distribution[gid].search.setup(config, (e, v) => {
-//         distribution.local.store.put(v, 'searchdb', (e,v) => {
-//             cb(e, v)
-//             return;
-//         })
-//     }); 
-// }
-
 function searchKeyTerm(searchTerms, cb) {
     const config = {gid: gid, terms: searchTerms}
     distribution[gid].search.query(config, (e,v) => {
@@ -223,7 +189,6 @@ module.exports = {
     setUpNodes: setUpNodes, 
     shutDownNodes: shutDownNodes,
     setUpURLs: setUpURLs,  
-    // shardURLs: shardURLs, 
     processAllBatches: processAllBatches,
     setUpServer: setUpServer,
     searchKeyTerm: searchKeyTerm,
