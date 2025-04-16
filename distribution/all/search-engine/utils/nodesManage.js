@@ -282,6 +282,6 @@ module.exports = {
     processAllBatches: processAllBatches,
     setUpServer: setUpServer,
     searchKeyTerm: searchKeyTerm,
-    mergeQueueIntoSearchDB: mergeQueueIntoSearchDB
+    mergeQueueIntoSearchDB: mergeQueueIntoSearchDB,
     batchSize: batchSize
 }

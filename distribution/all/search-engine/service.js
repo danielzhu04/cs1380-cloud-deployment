@@ -109,23 +109,25 @@ function search(config) {
           values.forEach((html) => {
               const { author, releaseDate, language } = distribution[gid].search.parseMetadata(html);
               distribution.local.store.get("searchdb", (err2, globalIndex) => {
-              distribution.local.store.put(globalIndex, 'searchdb', (err3) => {
-              distribution[gid].store.get()
-              const terms = distribution[gid].search.stemHTML(html);
-              if (terms instanceof Error) {
-                return terms;
-              }
-              
-              terms.forEach((term) => {
-                  if (!(term in termsToUrls)) {
-                      termsToUrls[term] = {};
+                distribution.local.store.put(globalIndex, 'searchdb', (err3) => {
+                  distribution[gid].store.get()
+                  const terms = distribution[gid].search.stemHTML(html);
+                  if (terms instanceof Error) {
+                    return terms;
                   }
-                  if (!(key in termsToUrls[term])) {
-                      termsToUrls[term][key] = 0;
-                  }
-                  termsToUrls[term][key] += 1;
-                  // termsToUrls[term][key].freq += 1;
-              })
+                  
+                  terms.forEach((term) => {
+                      if (!(term in termsToUrls)) {
+                          termsToUrls[term] = {};
+                      }
+                      if (!(key in termsToUrls[term])) {
+                          termsToUrls[term][key] = 0;
+                      }
+                      termsToUrls[term][key] += 1;
+                      // termsToUrls[term][key].freq += 1;
+                  });
+                });
+              });
           });
 
           // Then modify mr reducer as well to handle object outputs instead of map outputs 
