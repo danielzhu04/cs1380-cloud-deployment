@@ -7,7 +7,6 @@ function ERROR(msg, arrArgs) {
     }
 }
 
-
 function LOG(msg, arrArgs) {
     let prefix = "-> "
     if (arrArgs) {
