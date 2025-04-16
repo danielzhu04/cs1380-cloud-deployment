@@ -16,7 +16,7 @@ const mrPath = path.resolve(__dirname, `../../../performance/search-engine/m6.mr
 function search(config) {
     const context = {};
     context.gid = config.gid || 'all';
-    context.hash = config.hash || global.distribution.util.id.naiveHash;
+    context.hash = config.hash || global.distribution.util.id.consistentHash;
 
     // For M6 performance
     // const mrPath = path.resolve(perfDir, "/m6.mrPerformance.js");
@@ -200,12 +200,14 @@ function search(config) {
         const start = performance.now();
         distribution[context.gid].mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
           const end = performance.now();
-          try {
-            // console.log("about to log to mrPath: ", mrPath);
-            fs.appendFileSync(mrPath, `MapReduce latency (ms/mr operation): ${end - start}\n`);
-          } catch (error) {
-            // console.log("ERROR WRITING FILE ", error);
-          }
+          log.elapsed.mrTime += end - start;
+          log.elapsed.numMr += 1;
+          // try {
+          //   // console.log("about to log to mrPath: ", mrPath);
+          //   fs.appendFileSync(mrPath, `MapReduce latency (ms/mr operation): ${end - start}\n`);
+          // } catch (error) {
+          //   // console.log("ERROR WRITING FILE ", error);
+          // }
 
           // console.error("AFTER RUNNING MR EXEC");
           // console.error("E IS ", e);
@@ -266,7 +268,7 @@ function search(config) {
         if (v) {
           const end = performance.now();
           console.log(`Querier latency (ms/query): ${(end - start).toFixed(2)}`);
-          console.log(`Querier throughput (queries/sec): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
+          console.log(`Querier throughput (queries/s): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
           let results = findMatchingInIndex(v, configuration.terms)
           // console.log("RESULT FOUND: ", results)
 

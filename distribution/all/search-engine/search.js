@@ -274,6 +274,19 @@ function manageQueryBooks() {
                         } else {
                           SE_FLOG(`All batches processed. Setting up Search Engine Server 🚀`);
                           SE_FLOG(`${searchEngineName} is ready!!`);
+                          console.log("Crawler latency (ms/URL): ", (log.elapsed.crawlTime / log.elapsed.numCrawled).toFixed(2));
+                          console.log("Crawler throughput (URLs/s): ", (log.elapsed.numCrawled /(log.elapsed.crawlTime / 1000).toFixed(2)));
+                          console.log("Indexer latency (ms/URL): ", (log.elapsed.indexTime / log.elapsed.numIndexed).toFixed(2));
+                          console.log("Indexer throughput (URLs/s): ", (log.elapsed.numIndexed /(log.elapsed.indexTime / 1000).toFixed(2)));
+                          console.log("MR latency (ms/MR operation): ", (log.elapsed.mrTime / log.elapsed.numMr).toFixed(2));
+                          console.log("MR throughput (MR operations/s): ", (log.elapsed.numMr /(log.elapsed.mrTime / 1000).toFixed(2)));
+
+                        //   console.log("Elapsed crawl time is ", log.elapsed.crawlTime);
+                        //   console.log("Elapsed index time is ", log.elapsed.indexTime);
+                        //   console.log("Elapsed mr time is ", log.elapsed.mrTime);
+                        //   console.log("Total crawled: ", log.elapsed.numCrawled);
+                        //   console.log("Total indexed: ", log.elapsed.numIndexed);
+                        //   console.log("Total mr: ", log.elapsed.numMr);
                         }
                     });
                 } else {

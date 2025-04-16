@@ -13,8 +13,8 @@ const searchGroup = {};
 const n1 = engineConfig.workerNodes.n1
 const n2 = engineConfig.workerNodes.n2
 const n3 = engineConfig.workerNodes.n3
-const batchSize = 4;
-const kURLs = 10;
+const batchSize = engineConfig.batchSize;
+const kURLs = engineConfig.kURLs;
 
 function addNodesToGroup() {
     searchGroup[id.getSID(n1)] = n1;

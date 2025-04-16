@@ -26,8 +26,18 @@ function FLOG(msg, arrArgs) {
     }
 }
 
+const elapsed = {
+    crawlTime: 0,
+    numCrawled: 0,
+    indexTime: 0,
+    numIndexed: 0,
+    mrTime: 0,
+    numMr: 0
+};
+
 module.exports = {
     ERROR: ERROR, 
     LOG: LOG, 
     FLOG: FLOG, 
+    elapsed: elapsed
 }

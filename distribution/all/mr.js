@@ -1,8 +1,8 @@
 /** @typedef {import("../types").Callback} Callback */
 const id = distribution.util.id;
+const log = require('./search-engine/utils/log');
 
 const fs = require('fs');
-// console.log('fs loaded:', typeof fs.writeFileSync);
 const path = require('path');
 const https = require('https');
 
@@ -111,8 +111,8 @@ function mr(config) {
               callback(new Error("Cannot put map results into local store"));
               return;
             }
-            console.log(`Crawler phase average latency (URL/ms): ${((end - start) / keys.length).toFixed(2)}`);
-            console.log(`Crawler phase throughput (keys/sec): ${(keys.length / ((end - start) / 1000)).toFixed(2)}`);
+            // console.log(`Crawler phase average latency (URL/ms): ${((end - start) / keys.length).toFixed(2)}`);
+            // console.log(`Crawler phase throughput (keys/sec): ${(keys.length / ((end - start) / 1000)).toFixed(2)}`);
             callback(null, nidValues);
           });
         })
@@ -304,11 +304,16 @@ function mr(config) {
           const keyList = nidsToKeys[nid];
           const remote = {service: uniqueID, method: 'map', node: nidsToNodes[nid]};
           const message = {gid: context.gid, nid: nid, keys: keyList, map: configuration["map"], uniqueID: uniqueID}; // fsFunc: fs.writeFileSync, crawlerPath: path.resolve(__dirname, `../../performance/search-engine/m6.crawlerPerformance.txt`), uniqueID: uniqueID};
+          const mStart = performance.now();
           distribution.local.comm.send([message], remote, (e, v) => {
             if (e) {
               cb(new Error("Error mapping with local comm"));
               return;
             }
+            const mEnd = performance.now();
+            log.elapsed.crawlTime += mEnd - mStart;
+            log.elapsed.numCrawled += keyList.length;
+            // console.log("crawl now ", log.elapsed.crawlTime);
 
             mapResults = Object.assign(mapResults, v);
 
@@ -348,6 +353,7 @@ function mr(config) {
                       const remote = {service: uniqueID, method: 'reduce', node: nidsToNodes[nid]};
                       const message = {gid: context.gid, reduce: configuration["reduce"], uniqueID: uniqueID};
                       // console.error("About to call reduce");
+                      const rStart = performance.now();
                       distribution.local.comm.send([message], remote, (e, v) => {
                         // console.error("AFTER CALLING REDUCE USING LOCAL COMM");
                         // console.error("AFTER reduce, e is ", e);
@@ -355,6 +361,13 @@ function mr(config) {
                         if (e) {
                           cb(new Error("Error reducing with local comm"));
                           return;
+                        }
+
+                        const rEnd = performance.now();
+                        log.elapsed.indexTime += rEnd - rStart;
+                        // console.log("indexTime is ", log.elapsed.indexTime);
+                        if (typeof nidsToKeys[nid] != "undefined") {
+                          log.elapsed.numIndexed += nidsToKeys[nid].length;
                         }
 
                         if (v instanceof Array) {

@@ -27,7 +27,9 @@ function setUpConfig() {
         workerNodesCount: Object.keys(workerNodes).length, 
         dataPath: null, 
         queryWithMetadata: false, 
-        stemmer: stemWords 
+        stemmer: stemWords, 
+        batchSize: 4, 
+        kURLs: 10
     }
 
     console.log(`Welcome to ${config.searchEngineName} search engine!`)
