@@ -139,6 +139,8 @@ function setUpServer(batchKeys, cb) {
     if (err) {
       return cb(err);
     }
+    cb(null, v);
+    
     updateQueueFile((queueData) => {
       Object.keys(v).forEach(term => {
         if (!queueData[term]) {
@@ -153,7 +155,7 @@ function setUpServer(batchKeys, cb) {
         return cb(updateErr);
       }
       console.log("Appended new batch results to newIndexQueue.json");
-      cb(null, v);
+      // cb(null, v);
     });
   });
 }
