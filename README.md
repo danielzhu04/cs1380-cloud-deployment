@@ -299,3 +299,36 @@ Note that I only characterized the performance of my chosen workflow (TF-IDF) lo
 > Which extra features did you implement and how?
 
 N/A
+
+# M6: GutenSearch-Cloud Deployment
+
+## Summarize the process of writing the paper and preparing the poster, including any surprises you encountered.
+
+
+## Roughly, how many hours did M6 take you to complete?
+
+
+Hours: 90 hours (implementation), 20 hours (paper), 10 hours (poster)
+
+
+## How many LoC did the distributed version of the project end up taking?
+
+
+DLoC: 1030
+The various components of our distributed search engine took around 1030 LoC. 
+
+
+## How does this number compare with your non-distributed version?
+
+
+LoC: 1500
+Our original prediction of how many LoC our distributed version would take in M0 was around 1500-1600. Our non-distributed version in M0 itself took around 322 LoC. 
+
+
+## How different are these numbers for different members in the team and why?
+
+Our team worked a relatively even number of hours (the total hours reported was the sum of hours per person). Our predictions on the LoC for distributed search engine implementation were relatively similar. One group 
+member noted a much larger prediction than our reported value. We did not expect the LoC for our search engine to not be as large as our prediction. 
+
+## Paper Reflection Exerpt
+We begin drafting the paper before implementation, using the paper to formalize ideas and recognize key challenges. We returned to polish and modify the paper with more implementation details and diagrams after the majority of the implementation was completed. We found it surprising how much we changed our implementation from the original draft of the paper before implementation to the current version, in which the original draft helped us easily identify modifications. In total, the distributed version of the project ended up taking $1030$ LoC for all search engine components, including the distribution set-up, crawler, indexer, querier / CLI, and tests/experiments. The original prediction from M0 ranged between $1500$--$1600$ LoC. One of the reasons for these predictions was that we thought the distributed version would have many additional moving parts, which we underestimated, considering search engine functionality alone was 1K LoC. With other distributed services from the previous milestones, the LoC to support the entire search engine would be higher. 
