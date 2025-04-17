@@ -103,15 +103,16 @@ function search(config) {
         const reducer = (key, values, config) => {
           // key is the url
           // values is a list of html contents
-        
+          // console.log("values, length", values)
           const gid = config["gid"];
           const termsToUrls = {};
           values.forEach((html) => {
+              const metadata = distribution[gid].search.parseMetadata(html);
+              // console.log("METADATA", metadata)
               const terms = distribution[gid].search.stemHTML(html);
               if (terms instanceof Error) {
                 return terms;
               }
-              
               terms.forEach((term) => {
                   if (!(term in termsToUrls)) {
                       termsToUrls[term] = {};
@@ -121,9 +122,13 @@ function search(config) {
                   }
                   termsToUrls[term][key] += 1;
               })
+              // Then modify mr reducer as well to handle object outputs instead of map outputs 
+              distribution[gid].store.put(metadata, key, () => {
+                // console.log("success, ", key)
+              });
           });
 
-          // Then modify mr reducer as well to handle object outputs instead of map outputs 
+          // // Then modify mr reducer as well to handle object outputs instead of map outputs 
           return termsToUrls; 
         };  
 
@@ -136,6 +141,56 @@ function search(config) {
           callback(e, v);
           return;
         });
+    }
+
+    // function parseMetadata(bookText) {
+    //   const text = bookText.normalize('NFKC').replace(/[\u0000-\u001F]/g, ' ');   // keep spaces, drop controls
+
+    //   // Generic helper:   find “Label:”  capture until the next label or line‑end
+    //   function capture(label) {
+    //     const re = new RegExp(
+    //       String.raw`${label}\s*([^\n\r]*?)\s*(?=(?:Author:|Release\s+Date:|Language:|$))`,
+    //       'i'
+    //     );
+    //     const m = text.match(re);
+    //     return m ? m[1].trim() : 'Unknown';
+    //   }
+
+    //   return {
+    //     author:      capture('Author:'),
+    //     releaseDate: capture('Release\\s+Date:'),
+    //     language:    capture('Language:')
+    //   };
+    // }
+    function parseMetadata(raw) {
+      // normalise, drop control chars
+      const txt = raw
+        .normalize('NFKC')
+        .replace(/[\u0000-\u001F]/g, ' ');
+    
+      // generic helper: capture text after <label> up to next label or EoF
+      function capture(label) {
+        const re = new RegExp(
+          String.raw`${label}\s*([\s\S]*?)(?=\s*(?:Author:|Release\s+Date:|Language:|$))`,
+          'i'
+        );
+        const m = txt.match(re);
+        return m ? m[1].trim() : 'Unknown';
+      }
+    
+      // 1) author: take everything until next label
+      let author = capture('Author:');
+    
+      // 2) release date: take until first "[" or next label, then trim brackets
+      let releaseDate = capture('Release\\s+Date:')
+                         .split('[')[0]        // cut off “[Etext …] [...]” notes
+                         .trim();
+    
+      // 3) language: first word after label
+      const langMatch = txt.match(/Language:\s*([A-Za-z]+)/i);
+      const language  = langMatch ? langMatch[1].trim() : 'Unknown';
+    
+      return { author, releaseDate, language };
     }
 
     function findMatchingInIndex(file, keyTerms) {
@@ -157,20 +212,9 @@ function search(config) {
       // Print matching lines. 
       return matchingLines
     }
-
+    
     function query(configuration, callback) {
       const start = performance.now();
-      // distribution.local.store.get('searchdb', (e,v) => {
-      //   if (v) {
-      //     const end = performance.now();
-      //     console.log(`Querier latency (ms/query): ${(end - start).toFixed(2)}`);
-      //     console.log(`Querier throughput (queries/s): ${(1/ ((end - start) / 1000)).toFixed(2)}`);
-      //     let results = findMatchingInIndex(v, configuration.terms)
-      //     callback(null, results);
-      //   } else {
-      //     callback(null, [])
-      //   }
-      // })  
       let term = configuration.terms.replace(/\n/g, ' ');
       term = term.trim();
       distribution.local.store.get(term, (err, topKArray) => {
@@ -194,7 +238,8 @@ function search(config) {
         getHTTP, 
         setup,
         query,
-        stemHTML
+        stemHTML,
+        parseMetadata
     }
 }
 

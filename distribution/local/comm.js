@@ -100,7 +100,7 @@ function send(message, remote, callback) {
 
         req.on('error', (error) => {
             if (attempt < MAX_RETRIES) {
-                console.log("RETRY COMM SEND")
+                // console.log("RETRY COMM SEND")
                 attempt++;
                 const delay = RETRY_DELAY * Math.pow(2, attempt - 1); // exponential backoff
                 // console.warn(`[comm] Socket error, retrying attempt ${attempt} in ${delay}ms...`);

@@ -13,6 +13,7 @@ const SE_FLOG = log.FLOG
 const searchEngineName = engineConfig.searchEngineName
 let queryWithMetadata = engineConfig.queryWithMetadata
 let localServer = engineConfig.localServer
+const gid = engineConfig.searchGroupConfig.gid
 
 // 1. User will select a search engine type and return result type (if 
 //    they would like more metadata in their results) that they would like to use. 
@@ -95,7 +96,7 @@ async function search(searchTerms) {
     // Stem all parts of search terms for closer match. 
     const stemmedSearchTerms = engineConfig.stemmer(searchTerms)
    
-    nodesManager.searchKeyTerm(stemmedSearchTerms, (e,v) => {
+    nodesManager.searchKeyTerm(stemmedSearchTerms, async (e,v) => {
         if (e) {
             SE_ERROR("Querying Failed! for search keywords: ", searchTerms, " Error: ", e)
             return null;  
@@ -114,25 +115,82 @@ async function search(searchTerms) {
                 // Format querying results based on if the user chose metadata 
                 // or just with links rankd in frequnecy first. 
                 if (queryWithMetadata) {
+                    const urls = searchResult.map(o => Object.keys(o)[0]);
+
+                    // const metaArr = await Promise.all(
+                    //     urls.map(url =>
+                    //         new Promise(resolve =>
+                    //             distribution[gid].store.get(url, (err, val) => resolve(val || {}))
+                    //         )
+                    //     )
+                    // )
+                    // console.log("metaARR", metaArr
                     const t = new table({
-                        head: ['Link', 'Frequency', 'Index terms'],
-                        colWidths: [80, 13, 50], 
+                        head: ['Link', 'Frequency', 'Author', 'Release Date', 'Language', 'Index terms'],
+                        colWidths: [60, 10, 25, 18, 12, 20],
                         wordWrap: true
                     });
 
-                    searchResult.forEach((res) => {
-                        let linkSeen = []
-                        let key = res['key']
-                        let freq = res['freqs']
-                        freq.forEach(f => {
-                            const firstLink = Object.keys(f)[0]
-                            const freq = f[firstLink] 
-                            if (!linkSeen.includes(firstLink + freq)) {
-                                linkSeen.push(firstLink + freq);
-                                t.push([firstLink, f[firstLink], key]);
-                            }
-                        })
-                    })
+                    // 1. grab *every* url that will appear in the table
+                    const allPairs = []; // [{ url, freq, termKey }]
+                    searchResult.forEach(res => {
+                        const termKey = res.key;
+                        res.freqs.forEach(o => {
+                        const url  = Object.keys(o)[0];
+                        const freq = o[url];
+                        allPairs.push({ url, freq, termKey });
+                        });
+                    });
+
+                    // 2. fetch metadata for each url in parallel
+                    const metaArr = {};  // url -> {author, releaseDate, language}
+                    await Promise.all(
+                        allPairs.map(pair =>
+                        new Promise(resolve =>
+                            distribution[gid].store.get(pair.url, (err, meta) => {
+                            metaArr[pair.url] = meta || {};
+                            resolve();
+                            })
+                        )
+                        )
+                    );
+
+                    // 3. build table, avoiding duplicate   url+freq  rows
+                    const linkSeen = new Set();      // store "url|freq"
+                    allPairs.forEach(({ url, freq, termKey }) => {
+                        const tag = url + '|' + freq;
+                        if (linkSeen.has(tag)) return;
+                        linkSeen.add(tag);
+
+                        const m = metaArr[url];
+                        t.push([
+                        url,
+                        freq,
+                        m.author      || 'Unknown',
+                        m.releaseDate || 'Unknown',
+                        m.language    || 'Unknown', 
+                        termKey
+                        ]);
+                    });
+                    // const t = new table({
+                    //     head: ['Link', 'Frequency', 'Index terms'],
+                    //     colWidths: [80, 13, 50], 
+                    //     wordWrap: true
+                    // });
+
+                    // searchResult.forEach((res) => {
+                    //     let linkSeen = []
+                    //     let key = res['key']
+                    //     let freq = res['freqs']
+                    //     freq.forEach(f => {
+                    //         const firstLink = Object.keys(f)[0]
+                    //         const freq = f[firstLink] 
+                    //         if (!linkSeen.includes(firstLink + freq)) {
+                    //             linkSeen.push(firstLink + freq);
+                    //             t.push([firstLink, f[firstLink], key]);
+                    //         }
+                    //     })
+                    // })
                     
                     formattedReuslt = t
                 } else {

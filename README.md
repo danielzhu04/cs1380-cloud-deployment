@@ -297,5 +297,3 @@ Note that I only characterized the performance of my chosen workflow (TF-IDF) lo
 ## Key Feature
 
 > Which extra features did you implement and how?
-
-N/A
